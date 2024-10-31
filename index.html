@@ -6,6 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Inventario de Artículos</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -105,6 +107,7 @@
         <button onclick="importExcel()">Importar desde Excel</button>
         <button onclick="exportToExcel()">Exportar a Excel</button>
         <button onclick="clearTable()">Limpiar Datos</button>
+        <button onclick="saveDataToFirestore()">Guardar Datos</button>
     </div>
 
     <table>
@@ -122,6 +125,21 @@
     </table>
 
     <script>
+        // Tu configuración de Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyDZ60kUOY2TL_K_DIDEa73eRkYAMF4GRBU",
+            authDomain: "gestion-de-inventario-2118a.firebaseapp.com",
+            databaseURL: "https://gestion-de-inventario-2118a-default-rtdb.firebaseio.com",
+            projectId: "gestion-de-inventario-2118a",
+            storageBucket: "gestion-de-inventario-2118a.firebasestorage.app",
+            messagingSenderId: "232002336888",
+            appId: "1:232002336888:web:54ab5d49a3916fac5b158d"
+        };
+
+        // Inicializa Firebase
+        const app = firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore(); // Para Firestore
+
         document.getElementById('itemForm').addEventListener('submit', function (event) {
             event.preventDefault();
             const itemInput = document.getElementById('itemInput').value;
@@ -135,7 +153,6 @@
             });
 
             document.getElementById('itemForm').reset();
-            saveDataToLocalStorage();
         });
 
         function addItemToTable(code, name, quantitySystem, quantityPhysical) {
@@ -149,7 +166,7 @@
             document.getElementById('itemList').appendChild(row);
         }
 
-        function saveDataToLocalStorage() {
+        function saveDataToFirestore() {
             const rows = Array.from(document.querySelectorAll('#itemList tr')).map(row => {
                 const cells = row.querySelectorAll('td');
                 return {
@@ -159,13 +176,28 @@
                     quantityPhysical: cells[3].querySelector('input').value
                 };
             });
-            localStorage.setItem('inventoryData', JSON.stringify(rows));
+
+            rows.forEach((item) => {
+                db.collection('items').add(item)
+                    .then(() => {
+                        console.log("Documento escrito");
+                    })
+                    .catch((error) => {
+                        console.error("Error añadiendo documento: ", error);
+                    });
+            });
+
+            alert("Datos guardados en línea exitosamente.");
         }
 
-        function loadDataFromLocalStorage() {
-            const data = JSON.parse(localStorage.getItem('inventoryData') || '[]');
-            data.forEach(item => {
-                addItemToTable(item.code, item.name, item.quantitySystem, item.quantityPhysical);
+        function loadDataFromFirestore() {
+            db.collection('items').get().then((querySnapshot) => {
+                querySnapshot.forEach((doc) => {
+                    const item = doc.data();
+                    addItemToTable(item.code, item.name, item.quantitySystem, item.quantityPhysical);
+                });
+            }).catch((error) => {
+                console.error("Error al cargar datos de Firestore: ", error);
             });
         }
 
@@ -181,10 +213,10 @@
             const reader = new FileReader();
             reader.onload = function (event) {
                 const data = new Uint8Array(event.target.result);
-                const workbook = XLSX.read(data, {type: 'array'});
+                const workbook = XLSX.read(data, { type: 'array' });
 
                 const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-                const json = XLSX.utils.sheet_to_json(firstSheet, {header: 1});
+                const json = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
 
                 json.forEach(row => {
                     if (row.length >= 4) {
@@ -194,7 +226,6 @@
                         }
                     }
                 });
-                saveDataToLocalStorage();
             };
             reader.readAsArrayBuffer(file);
         }
@@ -223,11 +254,10 @@
 
         function clearTable() {
             document.getElementById('itemList').innerHTML = '';
-            localStorage.removeItem('inventoryData');
         }
 
-        // Cargar datos de localStorage cuando la página se cargue
-        window.onload = loadDataFromLocalStorage;
+        // Cargar datos de Firestore cuando la página se cargue
+        window.onload = loadDataFromFirestore;
     </script>
 </body>
 
