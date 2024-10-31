@@ -107,7 +107,7 @@
         <button onclick="importExcel()">Importar desde Excel</button>
         <button onclick="exportToExcel()">Exportar a Excel</button>
         <button onclick="clearTable()">Limpiar Datos</button>
-        <button onclick="saveDataToFirestore()">Guardar Datos</button> <!-- Botón para guardar -->
+        <button onclick="saveDataToFirestore()">Guardar Datos</button>
     </div>
 
     <table>
@@ -127,16 +127,17 @@
     <script>
         // Tu configuración de Firebase
         const firebaseConfig = {
-            apiKey: "TU_API_KEY",
-            authDomain: "TU_AUTH_DOMAIN",
-            projectId: "TU_PROJECT_ID",
-            storageBucket: "TU_STORAGE_BUCKET",
-            messagingSenderId: "TU_MESSAGING_SENDER_ID",
-            appId: "TU_APP_ID"
+            apiKey: "AIzaSyDZ60kUOY2TL_K_DIDEa73eRkYAMF4GRBU",
+            authDomain: "gestion-de-inventario-2118a.firebaseapp.com",
+            databaseURL: "https://gestion-de-inventario-2118a-default-rtdb.firebaseio.com",
+            projectId: "gestion-de-inventario-2118a",
+            storageBucket: "gestion-de-inventario-2118a.firebasestorage.app",
+            messagingSenderId: "232002336888",
+            appId: "1:232002336888:web:54ab5d49a3916fac5b158d"
         };
 
         // Inicializa Firebase
-        firebase.initializeApp(firebaseConfig);
+        const app = firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore(); // Para Firestore
 
         document.getElementById('itemForm').addEventListener('submit', function (event) {
