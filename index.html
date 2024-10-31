@@ -196,6 +196,8 @@
                     const item = doc.data();
                     addItemToTable(item.code, item.name, item.quantitySystem, item.quantityPhysical);
                 });
+            }).catch((error) => {
+                console.error("Error al cargar datos de Firestore: ", error);
             });
         }
 
@@ -260,3 +262,4 @@
 </body>
 
 </html>
+
