@@ -76,6 +76,63 @@
             document.getElementById('itemList').appendChild(row);
         }
 
+        // Importar desde Excel
+        function importExcel() {
+            const fileInput = document.getElementById('excelInput');
+            const file = fileInput.files[0];
+
+            if (!file) {
+                alert("Por favor, selecciona un archivo Excel.");
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function (event) {
+                const data = new Uint8Array(event.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                const json = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+
+                json.forEach(row => {
+                    if (row.length >= 4) {
+                        const [code, name, quantitySystem, quantityPhysical] = row.map(cell => cell ? cell.toString().trim() : "");
+                        if (code && name && quantitySystem && quantityPhysical) {
+                            addItemToTable(code, name, quantitySystem, quantityPhysical);
+                        }
+                    }
+                });
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        // Exportar a Excel
+        function exportToExcel() {
+            const rows = Array.from(document.querySelectorAll('#itemList tr')).map(row => {
+                const cells = row.querySelectorAll('td');
+                const quantitySystem = cells[2].querySelector('input').value;
+                const quantityPhysical = cells[3].querySelector('input').value;
+                const difference = quantityPhysical - quantitySystem;
+                return [
+                    cells[0].textContent,
+                    cells[1].textContent,
+                    quantitySystem,
+                    quantityPhysical,
+                    difference
+                ];
+            });
+
+            const worksheet = XLSX.utils.aoa_to_sheet([["Código", "Artículo", "Cantidad en Sistema", "Cantidad en Físico", "Diferencia"], ...rows]);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Inventario");
+
+            XLSX.writeFile(workbook, 'inventario_articulos.xlsx');
+        }
+
+        // Limpiar tabla
+        function clearTable() {
+            document.getElementById('itemList').innerHTML = '';
+        }
+
         // Cargar datos de Firestore cuando la página se cargue
         window.onload = loadDataFromFirestore;
     </script>
@@ -174,6 +231,9 @@
     </form>
 
     <div class="action-buttons">
+        <input type="file" id="excelInput" accept=".xlsx" />
+        <button onclick="importExcel()">Importar desde Excel</button>
+        <button onclick="exportToExcel()">Exportar a Excel</button>
         <button onclick="saveDataToFirestore()">Guardar Artículos en Firestore</button>
         <button onclick="clearTable()">Limpiar Datos</button>
     </div>
@@ -207,10 +267,6 @@
 
             document.getElementById('itemForm').reset();
         });
-
-        function clearTable() {
-            document.getElementById('itemList').innerHTML = '';
-        }
     </script>
 </body>
 
