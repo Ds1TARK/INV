@@ -9,7 +9,7 @@
     <script type="module">
         // Import the functions you need from the SDKs you need
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
-        import { getFirestore } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
 
         // Your web app's Firebase configuration
         const firebaseConfig = {
@@ -27,7 +27,7 @@
         const db = getFirestore(app);
 
         // Función para guardar datos en Firestore
-        function saveDataToFirestore() {
+        async function saveDataToFirestore() {
             const rows = Array.from(document.querySelectorAll('#itemList tr')).map(row => {
                 const cells = row.querySelectorAll('td');
                 return {
@@ -38,29 +38,23 @@
                 };
             });
 
-            rows.forEach((item) => {
-                const itemRef = db.collection('items').doc(item.code); // Usa el código como ID
-                itemRef.set(item)  // Esto agrega o actualiza el documento según el ID
-                    .then(() => {
-                        console.log("Documento guardado:", item);
-                    })
-                    .catch((error) => {
-                        console.error("Error al guardar documento: ", error);
-                    });
-            });
+            for (const item of rows) {
+                try {
+                    await addDoc(collection(db, 'items'), item); // Agregar documento
+                } catch (error) {
+                    console.error("Error al guardar documento: ", error);
+                }
+            }
 
             alert("Datos guardados en línea exitosamente.");
         }
 
         // Función para cargar datos desde Firestore
-        function loadDataFromFirestore() {
-            db.collection('items').get().then((querySnapshot) => {
-                querySnapshot.forEach((doc) => {
-                    const item = doc.data();
-                    addItemToTable(item.code, item.name, item.quantitySystem, item.quantityPhysical);
-                });
-            }).catch((error) => {
-                console.error("Error al cargar datos de Firestore: ", error);
+        async function loadDataFromFirestore() {
+            const querySnapshot = await getDocs(collection(db, 'items'));
+            querySnapshot.forEach((doc) => {
+                const item = doc.data();
+                addItemToTable(item.code, item.name, item.quantitySystem, item.quantityPhysical);
             });
         }
 
