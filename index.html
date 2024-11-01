@@ -7,11 +7,11 @@
     <title>Inventario de Artículos</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
     <script type="module">
-        // Import the functions you need from the SDKs you need
+        // Importar las funciones necesarias de Firebase
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
         import { getFirestore, collection, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
 
-        // Your web app's Firebase configuration
+        // Configuración de Firebase
         const firebaseConfig = {
             apiKey: "AIzaSyDZ60kUOY2TL_K_DIDEa73eRkYAMF4GRBU",
             authDomain: "gestion-de-inventario-2118a.firebaseapp.com",
@@ -22,7 +22,7 @@
             appId: "1:232002336888:web:19a0853cafe5a8385b158d"
         };
 
-        // Initialize Firebase
+        // Inicializar Firebase
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
@@ -33,14 +33,14 @@
                 return {
                     code: cells[0].textContent,
                     name: cells[1].textContent,
-                    quantitySystem: cells[2].querySelector('input').value,
-                    quantityPhysical: cells[3].querySelector('input').value
+                    quantitySystem: cells[2].textContent, // Manejar como texto
+                    quantityPhysical: cells[3].querySelector('input').value // Solo editable
                 };
             });
 
             for (const item of rows) {
                 try {
-                    await addDoc(collection(db, 'items'), item); // Agregar documento
+                    await addDoc(collection(db, 'items'), item);
                 } catch (error) {
                     console.error("Error al guardar documento: ", error);
                 }
@@ -64,8 +64,8 @@
             row.innerHTML = `
                 <td>${code}</td>
                 <td>${name}</td>
-                <td><input type="number" value="${quantitySystem}" min="0"></td>
-                <td><input type="number" value="${quantityPhysical}" min="0"></td>
+                <td>${quantitySystem}</td>
+                <td><input type="number" value="${quantityPhysical}" min="0" /></td>
             `;
             document.getElementById('itemList').appendChild(row);
         }
@@ -103,19 +103,15 @@
         function exportToExcel() {
             const rows = Array.from(document.querySelectorAll('#itemList tr')).map(row => {
                 const cells = row.querySelectorAll('td');
-                const quantitySystem = cells[2].querySelector('input').value;
-                const quantityPhysical = cells[3].querySelector('input').value;
-                const difference = quantityPhysical - quantitySystem;
                 return [
                     cells[0].textContent,
                     cells[1].textContent,
-                    quantitySystem,
-                    quantityPhysical,
-                    difference
+                    cells[2].textContent,
+                    cells[3].querySelector('input').value
                 ];
             });
 
-            const worksheet = XLSX.utils.aoa_to_sheet([["Código", "Artículo", "Cantidad en Sistema", "Cantidad en Físico", "Diferencia"], ...rows]);
+            const worksheet = XLSX.utils.aoa_to_sheet([["Código", "Artículo", "Cantidad en Sistema", "Cantidad en Físico"], ...rows]);
             const workbook = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(workbook, worksheet, "Inventario");
 
