@@ -6,8 +6,26 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Inventario de Artículos</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js"></script>
+    <script type="module">
+        // Importa las funciones necesarias de Firebase
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+        import { getFirestore } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+
+        // Configuración de Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyDZ60kUOY2TL_K_DIDEa73eRkYAMF4GRBU",
+            authDomain: "gestion-de-inventario-2118a.firebaseapp.com",
+            databaseURL: "https://gestion-de-inventario-2118a-default-rtdb.firebaseio.com",
+            projectId: "gestion-de-inventario-2118a",
+            storageBucket: "gestion-de-inventario-2118a.firebasestorage.app",
+            messagingSenderId: "232002336888",
+            appId: "1:232002336888:web:19a0853cafe5a8385b158d"
+        };
+
+        // Inicializa Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app); // Inicializa Firestore
+    </script>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -125,21 +143,7 @@
     </table>
 
     <script>
-        // Tu configuración de Firebase
-        const firebaseConfig = {
-            apiKey: "AIzaSyDZ60kUOY2TL_K_DIDEa73eRkYAMF4GRBU",
-            authDomain: "gestion-de-inventario-2118a.firebaseapp.com",
-            databaseURL: "https://gestion-de-inventario-2118a-default-rtdb.firebaseio.com",
-            projectId: "gestion-de-inventario-2118a",
-            storageBucket: "gestion-de-inventario-2118a.firebasestorage.app",
-            messagingSenderId: "232002336888",
-            appId: "1:232002336888:web:54ab5d49a3916fac5b158d"
-        };
-
-        // Inicializa Firebase
-        const app = firebase.initializeApp(firebaseConfig);
-        const db = firebase.firestore(); // Para Firestore
-
+        // Las funciones de tu aplicación
         document.getElementById('itemForm').addEventListener('submit', function (event) {
             event.preventDefault();
             const itemInput = document.getElementById('itemInput').value;
@@ -262,4 +266,3 @@
 </body>
 
 </html>
-
