@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Inventario de Artículos</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
     <script type="module">
         // Importar las funciones necesarias de Firebase
@@ -211,21 +212,21 @@
 
 <body>
     <div class="header-background">
-        <h1>Gestión de Artículos</h1>
+        <h1><i class="fas fa-clipboard-list"></i> Gestión de Artículos</h1>
     </div>
 
     <form id="itemForm">
         <label for="itemInput">Ingrese Artículos (código, artículo, cantidad en sistema, cantidad en físico):</label>
         <textarea id="itemInput" rows="4" required></textarea>
-        <button type="submit">Agregar Artículos</button>
+        <button type="submit"><i class="fas fa-plus"></i> Agregar Artículos</button>
     </form>
 
     <div class="action-buttons">
         <input type="file" id="excelInput" accept=".xlsx" />
-        <button onclick="importExcel()">Importar desde Excel</button>
-        <button onclick="exportToExcel()">Exportar a Excel</button>
-        <button onclick="saveDataToFirestore()">Guardar Artículos en Firestore</button>
-        <button onclick="clearTable()">Limpiar Datos</button>
+        <button onclick="importExcel()"><i class="fas fa-file-import"></i> Importar desde Excel</button>
+        <button onclick="exportToExcel()"><i class="fas fa-file-export"></i> Exportar a Excel</button>
+        <button onclick="saveDataToFirestore()"><i class="fas fa-save"></i> Guardar Artículos en Firestore</button>
+        <button onclick="clearTable()"><i class="fas fa-trash"></i> Limpiar Datos</button>
     </div>
 
     <table>
@@ -241,23 +242,6 @@
             <!-- Los artículos se agregarán aquí -->
         </tbody>
     </table>
-
-    <script>
-        document.getElementById('itemForm').addEventListener('submit', function (event) {
-            event.preventDefault();
-            const itemInput = document.getElementById('itemInput').value;
-            const items = itemInput.split('\n');
-
-            items.forEach(item => {
-                const [code, name, quantitySystem, quantityPhysical] = item.split(',').map(i => i.trim());
-                if (code && name && quantitySystem && quantityPhysical) {
-                    addItemToTable(code, name, quantitySystem, quantityPhysical);
-                }
-            });
-
-            document.getElementById('itemForm').reset();
-        });
-    </script>
 </body>
 
 </html>
