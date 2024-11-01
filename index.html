@@ -7,11 +7,11 @@
     <title>Inventario de Artículos</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
     <script type="module">
-        // Importa las funciones necesarias de Firebase
+        // Import the functions you need from the SDKs you need
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
         import { getFirestore } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
 
-        // Configuración de Firebase
+        // Your web app's Firebase configuration
         const firebaseConfig = {
             apiKey: "AIzaSyDZ60kUOY2TL_K_DIDEa73eRkYAMF4GRBU",
             authDomain: "gestion-de-inventario-2118a.firebaseapp.com",
@@ -22,9 +22,62 @@
             appId: "1:232002336888:web:19a0853cafe5a8385b158d"
         };
 
-        // Inicializa Firebase
+        // Initialize Firebase
         const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app); // Inicializa Firestore
+        const db = getFirestore(app);
+
+        // Función para guardar datos en Firestore
+        function saveDataToFirestore() {
+            const rows = Array.from(document.querySelectorAll('#itemList tr')).map(row => {
+                const cells = row.querySelectorAll('td');
+                return {
+                    code: cells[0].textContent,
+                    name: cells[1].textContent,
+                    quantitySystem: cells[2].querySelector('input').value,
+                    quantityPhysical: cells[3].querySelector('input').value
+                };
+            });
+
+            rows.forEach((item) => {
+                const itemRef = db.collection('items').doc(item.code); // Usa el código como ID
+                itemRef.set(item)  // Esto agrega o actualiza el documento según el ID
+                    .then(() => {
+                        console.log("Documento guardado:", item);
+                    })
+                    .catch((error) => {
+                        console.error("Error al guardar documento: ", error);
+                    });
+            });
+
+            alert("Datos guardados en línea exitosamente.");
+        }
+
+        // Función para cargar datos desde Firestore
+        function loadDataFromFirestore() {
+            db.collection('items').get().then((querySnapshot) => {
+                querySnapshot.forEach((doc) => {
+                    const item = doc.data();
+                    addItemToTable(item.code, item.name, item.quantitySystem, item.quantityPhysical);
+                });
+            }).catch((error) => {
+                console.error("Error al cargar datos de Firestore: ", error);
+            });
+        }
+
+        // Agregar artículo a la tabla
+        function addItemToTable(code, name, quantitySystem, quantityPhysical) {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${code}</td>
+                <td>${name}</td>
+                <td><input type="number" value="${quantitySystem}" min="0"></td>
+                <td><input type="number" value="${quantityPhysical}" min="0"></td>
+            `;
+            document.getElementById('itemList').appendChild(row);
+        }
+
+        // Cargar datos de Firestore cuando la página se cargue
+        window.onload = loadDataFromFirestore;
     </script>
     <style>
         body {
@@ -121,11 +174,8 @@
     </form>
 
     <div class="action-buttons">
-        <input type="file" id="excelInput" accept=".xlsx" />
-        <button onclick="importExcel()">Importar desde Excel</button>
-        <button onclick="exportToExcel()">Exportar a Excel</button>
+        <button onclick="saveDataToFirestore()">Guardar Artículos en Firestore</button>
         <button onclick="clearTable()">Limpiar Datos</button>
-        <button onclick="saveDataToFirestore()">Guardar Datos</button>
     </div>
 
     <table>
@@ -143,7 +193,6 @@
     </table>
 
     <script>
-        // Las funciones de tu aplicación
         document.getElementById('itemForm').addEventListener('submit', function (event) {
             event.preventDefault();
             const itemInput = document.getElementById('itemInput').value;
@@ -159,109 +208,9 @@
             document.getElementById('itemForm').reset();
         });
 
-        function addItemToTable(code, name, quantitySystem, quantityPhysical) {
-            const row = document.createElement('tr');
-            row.innerHTML = `
-                <td>${code}</td>
-                <td>${name}</td>
-                <td><input type="number" value="${quantitySystem}" min="0"></td>
-                <td><input type="number" value="${quantityPhysical}" min="0"></td>
-            `;
-            document.getElementById('itemList').appendChild(row);
-        }
-
-        function saveDataToFirestore() {
-            const rows = Array.from(document.querySelectorAll('#itemList tr')).map(row => {
-                const cells = row.querySelectorAll('td');
-                return {
-                    code: cells[0].textContent,
-                    name: cells[1].textContent,
-                    quantitySystem: cells[2].querySelector('input').value,
-                    quantityPhysical: cells[3].querySelector('input').value
-                };
-            });
-
-            rows.forEach((item) => {
-                db.collection('items').add(item)
-                    .then(() => {
-                        console.log("Documento escrito");
-                    })
-                    .catch((error) => {
-                        console.error("Error añadiendo documento: ", error);
-                    });
-            });
-
-            alert("Datos guardados en línea exitosamente.");
-        }
-
-        function loadDataFromFirestore() {
-            db.collection('items').get().then((querySnapshot) => {
-                querySnapshot.forEach((doc) => {
-                    const item = doc.data();
-                    addItemToTable(item.code, item.name, item.quantitySystem, item.quantityPhysical);
-                });
-            }).catch((error) => {
-                console.error("Error al cargar datos de Firestore: ", error);
-            });
-        }
-
-        function importExcel() {
-            const fileInput = document.getElementById('excelInput');
-            const file = fileInput.files[0];
-
-            if (!file) {
-                alert("Por favor, selecciona un archivo Excel.");
-                return;
-            }
-
-            const reader = new FileReader();
-            reader.onload = function (event) {
-                const data = new Uint8Array(event.target.result);
-                const workbook = XLSX.read(data, { type: 'array' });
-
-                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-                const json = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
-
-                json.forEach(row => {
-                    if (row.length >= 4) {
-                        const [code, name, quantitySystem, quantityPhysical] = row.map(cell => cell ? cell.toString().trim() : "");
-                        if (code && name && quantitySystem && quantityPhysical) {
-                            addItemToTable(code, name, quantitySystem, quantityPhysical);
-                        }
-                    }
-                });
-            };
-            reader.readAsArrayBuffer(file);
-        }
-
-        function exportToExcel() {
-            const rows = Array.from(document.querySelectorAll('#itemList tr')).map(row => {
-                const cells = row.querySelectorAll('td');
-                const quantitySystem = cells[2].querySelector('input').value;
-                const quantityPhysical = cells[3].querySelector('input').value;
-                const difference = quantityPhysical - quantitySystem;
-                return [
-                    cells[0].textContent,
-                    cells[1].textContent,
-                    quantitySystem,
-                    quantityPhysical,
-                    difference
-                ];
-            });
-
-            const worksheet = XLSX.utils.aoa_to_sheet([["Código", "Artículo", "Cantidad en Sistema", "Cantidad en Físico", "Diferencia"], ...rows]);
-            const workbook = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(workbook, worksheet, "Inventario");
-
-            XLSX.writeFile(workbook, 'inventario_articulos.xlsx');
-        }
-
         function clearTable() {
             document.getElementById('itemList').innerHTML = '';
         }
-
-        // Cargar datos de Firestore cuando la página se cargue
-        window.onload = loadDataFromFirestore;
     </script>
 </body>
 
