@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Inventario de Artículos</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
+    <script type="text/javascript" src="https://cdn.emailjs.com/dist/email.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <style>
         body {
@@ -127,6 +128,9 @@
     </table>
 
     <script>
+        // Inicializa EmailJS con tu clave de usuario
+        emailjs.init("YOUR_USER_ID");  // Reemplaza con tu User ID de EmailJS
+
         document.getElementById('itemForm').addEventListener('submit', function (event) {
             event.preventDefault();
             const itemInput = document.getElementById('itemInput').value;
@@ -148,7 +152,7 @@
             row.innerHTML = `
                 <td>${code}</td>
                 <td>${name}</td>
-                <td><input type="number" value="${quantitySystem}" min="0"></td>
+                <td><input type="number" value="${quantitySystem}" min="0" readonly></td>
                 <td><input type="number" value="${quantityPhysical}" min="0"></td>
             `;
             document.getElementById('itemList').appendChild(row);
@@ -223,7 +227,45 @@
             const workbook = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(workbook, worksheet, "Inventario");
 
-            XLSX.writeFile(workbook, 'inventario_articulos.xlsx');
+            // Generar archivo Excel en formato binario
+            const excelFile = XLSX.write(workbook, { bookType: "xlsx", type: "binary" });
+
+            // Convertir el archivo binario a un Blob
+            const blob = new Blob([s2ab(excelFile)], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+            const fileName = 'inventario_articulos.xlsx';
+
+            // Crear un FormData y adjuntar el archivo Excel
+            const formData = new FormData();
+            formData.append("file", blob, fileName);
+
+            // Enviar el archivo por correo a través de EmailJS
+            sendEmailWithAttachment(formData);
+        }
+
+        function s2ab(s) {
+            const buf = new ArrayBuffer(s.length);
+            const view = new Uint8Array(buf);
+            for (let i = 0; i < s.length; i++) {
+                view[i] = s.charCodeAt(i) & 0xFF;
+            }
+            return buf;
+        }
+
+        function sendEmailWithAttachment(formData) {
+            const templateParams = {
+                to_email: "daniel.a.a1733@outlook.com",  // Correo de destino
+                subject: "Inventario de Artículos",
+                message: "Adjunto el archivo de inventario de artículos.",
+                attachment: formData
+            };
+
+            // Enviar el correo usando EmailJS con tu Service ID y Template ID
+            emailjs.sendForm("ilen71j", "rxtflbj", templateParams)
+                .then(function(response) {
+                    alert('Correo enviado exitosamente');
+                }, function(error) {
+                    alert('Error al enviar el correo: ' + error.text);
+                });
         }
 
         function clearTable() {
