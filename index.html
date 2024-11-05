@@ -5,128 +5,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Inventario de Artículos</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
-    <script type="module">
-        // Importar las funciones necesarias de Firebase
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
-        import { getFirestore, collection, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
-
-        // Configuración de Firebase
-        const firebaseConfig = {
-            apiKey: "AIzaSyDZ60kUOY2TL_K_DIDEa73eRkYAMF4GRBU",
-            authDomain: "gestion-de-inventario-2118a.firebaseapp.com",
-            databaseURL: "https://gestion-de-inventario-2118a-default-rtdb.firebaseio.com",
-            projectId: "gestion-de-inventario-2118a",
-            storageBucket: "gestion-de-inventario-2118a.firebasestorage.app",
-            messagingSenderId: "232002336888",
-            appId: "1:232002336888:web:19a0853cafe5a8385b158d"
-        };
-
-        // Inicializar Firebase
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-
-        // Función para guardar datos en Firestore
-        async function saveDataToFirestore() {
-            const rows = Array.from(document.querySelectorAll('#itemList tr')).map(row => {
-                const cells = row.querySelectorAll('td');
-                return {
-                    code: cells[0].textContent,
-                    name: cells[1].textContent,
-                    quantitySystem: cells[2].textContent, // Manejar como texto
-                    quantityPhysical: cells[3].querySelector('input').value // Solo editable
-                };
-            });
-
-            for (const item of rows) {
-                try {
-                    await addDoc(collection(db, 'items'), item);
-                } catch (error) {
-                    console.error("Error al guardar documento: ", error);
-                }
-            }
-
-            alert("Datos guardados en línea exitosamente.");
-        }
-
-        // Función para cargar datos desde Firestore
-        async function loadDataFromFirestore() {
-            const querySnapshot = await getDocs(collection(db, 'items'));
-            querySnapshot.forEach((doc) => {
-                const item = doc.data();
-                addItemToTable(item.code, item.name, item.quantitySystem, item.quantityPhysical);
-            });
-        }
-
-        // Agregar artículo a la tabla
-        function addItemToTable(code, name, quantitySystem, quantityPhysical) {
-            const row = document.createElement('tr');
-            row.innerHTML = `
-                <td>${code}</td>
-                <td>${name}</td>
-                <td>${quantitySystem}</td>
-                <td><input type="number" value="${quantityPhysical}" min="0" /></td>
-            `;
-            document.getElementById('itemList').appendChild(row);
-        }
-
-        // Importar desde Excel
-        function importExcel() {
-            const fileInput = document.getElementById('excelInput');
-            const file = fileInput.files[0];
-
-            if (!file) {
-                alert("Por favor, selecciona un archivo Excel.");
-                return;
-            }
-
-            const reader = new FileReader();
-            reader.onload = function (event) {
-                const data = new Uint8Array(event.target.result);
-                const workbook = XLSX.read(data, { type: 'array' });
-                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-                const json = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
-
-                json.forEach(row => {
-                    if (row.length >= 4) {
-                        const [code, name, quantitySystem, quantityPhysical] = row.map(cell => cell ? cell.toString().trim() : "");
-                        if (code && name && quantitySystem && quantityPhysical) {
-                            addItemToTable(code, name, quantitySystem, quantityPhysical);
-                        }
-                    }
-                });
-            };
-            reader.readAsArrayBuffer(file);
-        }
-
-        // Exportar a Excel
-        function exportToExcel() {
-            const rows = Array.from(document.querySelectorAll('#itemList tr')).map(row => {
-                const cells = row.querySelectorAll('td');
-                return [
-                    cells[0].textContent,
-                    cells[1].textContent,
-                    cells[2].textContent,
-                    cells[3].querySelector('input').value
-                ];
-            });
-
-            const worksheet = XLSX.utils.aoa_to_sheet([["Código", "Artículo", "Cantidad en Sistema", "Cantidad en Físico"], ...rows]);
-            const workbook = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(workbook, worksheet, "Inventario");
-
-            XLSX.writeFile(workbook, 'inventario_articulos.xlsx');
-        }
-
-        // Limpiar tabla
-        function clearTable() {
-            document.getElementById('itemList').innerHTML = '';
-        }
-
-        // Cargar datos de Firestore cuando la página se cargue
-        window.onload = loadDataFromFirestore;
-    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -207,26 +87,30 @@
         .action-buttons button {
             width: 120px;
         }
+
+        .icon {
+            margin-right: 5px;
+        }
     </style>
 </head>
 
 <body>
     <div class="header-background">
-        <h1><i class="fas fa-clipboard-list"></i> Gestión de Artículos</h1>
+        <h1>Gestión de Artículos</h1>
     </div>
 
     <form id="itemForm">
         <label for="itemInput">Ingrese Artículos (código, artículo, cantidad en sistema, cantidad en físico):</label>
         <textarea id="itemInput" rows="4" required></textarea>
-        <button type="submit"><i class="fas fa-plus"></i> Agregar Artículos</button>
+        <button type="submit"><i class="fas fa-plus icon"></i>Agregar Artículos</button>
+        <button type="button" id="saveButton"><i class="fas fa-save icon"></i>Guardar en Google Sheets</button>
     </form>
 
     <div class="action-buttons">
         <input type="file" id="excelInput" accept=".xlsx" />
-        <button onclick="importExcel()"><i class="fas fa-file-import"></i> Importar desde Excel</button>
-        <button onclick="exportToExcel()"><i class="fas fa-file-export"></i> Exportar a Excel</button>
-        <button onclick="saveDataToFirestore()"><i class="fas fa-save"></i> Guardar Artículos en Firestore</button>
-        <button onclick="clearTable()"><i class="fas fa-trash"></i> Limpiar Datos</button>
+        <button onclick="importExcel()"><i class="fas fa-file-import icon"></i>Importar desde Excel</button>
+        <button onclick="exportToExcel()"><i class="fas fa-file-export icon"></i>Exportar a Excel</button>
+        <button onclick="clearTable()"><i class="fas fa-trash-alt icon"></i>Limpiar Datos</button>
     </div>
 
     <table>
@@ -242,6 +126,157 @@
             <!-- Los artículos se agregarán aquí -->
         </tbody>
     </table>
+
+    <script>
+        document.getElementById('itemForm').addEventListener('submit', function (event) {
+            event.preventDefault();
+            const itemInput = document.getElementById('itemInput').value;
+            const items = itemInput.split('\n');
+
+            items.forEach(item => {
+                const [code, name, quantitySystem, quantityPhysical] = item.split(',').map(i => i.trim());
+                if (code && name && quantitySystem && quantityPhysical) {
+                    addItemToTable(code, name, quantitySystem, quantityPhysical);
+                }
+            });
+
+            document.getElementById('itemForm').reset();
+            saveDataToLocalStorage();
+        });
+
+        document.getElementById('saveButton').addEventListener('click', function () {
+            const rows = Array.from(document.querySelectorAll('#itemList tr')).map(row => {
+                const cells = row.querySelectorAll('td');
+                return {
+                    code: cells[0].textContent,
+                    name: cells[1].textContent,
+                    quantitySystem: cells[2].querySelector('input').value,
+                    quantityPhysical: cells[3].querySelector('input').value
+                };
+            });
+
+            if (rows.length > 0) {
+                saveDataToGoogleSheets(rows);
+            } else {
+                alert("No hay datos para guardar.");
+            }
+        });
+
+        function saveDataToGoogleSheets(data) {
+            fetch('https://script.google.com/macros/s/AKfycbyFAjKG_EeUBPjUURvaAkmLyWsD9htQUC0Nk95sVJTCPZXrL6jwVT2Vw26qHYES1jZ7/exec', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error("Error en la respuesta del servidor: " + response.statusText);
+                }
+                return response.text();
+            })
+            .then(result => {
+                alert("Datos guardados correctamente.");
+                console.log(result);
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert("Hubo un error al guardar los datos: " + error.message);
+            });
+        }
+
+        function addItemToTable(code, name, quantitySystem, quantityPhysical) {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${code}</td>
+                <td>${name}</td>
+                <td><input type="number" value="${quantitySystem}" min="0"></td>
+                <td><input type="number" value="${quantityPhysical}" min="0"></td>
+            `;
+            document.getElementById('itemList').appendChild(row);
+        }
+
+        function saveDataToLocalStorage() {
+            const rows = Array.from(document.querySelectorAll('#itemList tr')).map(row => {
+                const cells = row.querySelectorAll('td');
+                return {
+                    code: cells[0].textContent,
+                    name: cells[1].textContent,
+                    quantitySystem: cells[2].querySelector('input').value,
+                    quantityPhysical: cells[3].querySelector('input').value
+                };
+            });
+            localStorage.setItem('inventoryData', JSON.stringify(rows));
+        }
+
+        function loadDataFromLocalStorage() {
+            const data = JSON.parse(localStorage.getItem('inventoryData') || '[]');
+            data.forEach(item => {
+                addItemToTable(item.code, item.name, item.quantitySystem, item.quantityPhysical);
+            });
+        }
+
+        function importExcel() {
+            const fileInput = document.getElementById('excelInput');
+            const file = fileInput.files[0];
+
+            if (!file) {
+                alert("Por favor, selecciona un archivo Excel.");
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function (event) {
+                const data = new Uint8Array(event.target.result);
+                const workbook = XLSX.read(data, {type: 'array'});
+
+                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                const json = XLSX.utils.sheet_to_json(firstSheet, {header: 1});
+
+                json.forEach(row => {
+                    if (row.length >= 4) {
+                        const [code, name, quantitySystem, quantityPhysical] = row.map(cell => cell ? cell.toString().trim() : "");
+                        if (code && name && quantitySystem && quantityPhysical) {
+                            addItemToTable(code, name, quantitySystem, quantityPhysical);
+                        }
+                    }
+                });
+                saveDataToLocalStorage();
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        function exportToExcel() {
+            const rows = Array.from(document.querySelectorAll('#itemList tr')).map(row => {
+                const cells = row.querySelectorAll('td');
+                const quantitySystem = cells[2].querySelector('input').value;
+                const quantityPhysical = cells[3].querySelector('input').value;
+                const difference = quantityPhysical - quantitySystem;
+                return [
+                    cells[0].textContent,
+                    cells[1].textContent,
+                    quantitySystem,
+                    quantityPhysical,
+                    difference
+                ];
+            });
+
+            const worksheet = XLSX.utils.aoa_to_sheet([["Código", "Artículo", "Cantidad en Sistema", "Cantidad en Físico", "Diferencia"], ...rows]);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Inventario");
+
+            XLSX.writeFile(workbook, 'inventario_articulos.xlsx');
+        }
+
+        function clearTable() {
+            document.getElementById('itemList').innerHTML = '';
+            localStorage.removeItem('inventoryData');
+        }
+
+        // Cargar datos de localStorage cuando la página se cargue
+        window.onload = loadDataFromLocalStorage;
+    </script>
 </body>
 
 </html>
