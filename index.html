@@ -130,7 +130,7 @@
 
     <script>
         // Inicializa EmailJS con tu User ID
-        emailjs.init("f0qPRaYgt5aACOOlj");  // Aquí va tu propio User ID de EmailJS
+        emailjs.init("f0z_66d6oZ5MOR0eQn0Z5");  // Aquí va tu propio User ID de EmailJS
 
         document.getElementById('itemForm').addEventListener('submit', function (event) {
             event.preventDefault();
@@ -253,7 +253,6 @@
         }
 
         function sendEmailWithAttachment() {
-            // Recoger los datos de la tabla
             const rows = Array.from(document.querySelectorAll('#itemList tr')).map(row => {
                 const cells = row.querySelectorAll('td');
                 const quantitySystem = cells[2].querySelector('input').value;
