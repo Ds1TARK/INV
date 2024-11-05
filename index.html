@@ -111,6 +111,7 @@
         <button onclick="importExcel()"><i class="fas fa-file-import icon"></i>Importar desde Excel</button>
         <button onclick="exportToExcel()"><i class="fas fa-file-export icon"></i>Exportar a Excel</button>
         <button onclick="clearTable()"><i class="fas fa-trash-alt icon"></i>Limpiar Datos</button>
+        <button onclick="sendEmailWithAttachment()"><i class="fas fa-envelope icon"></i>Enviar por Correo</button>
     </div>
 
     <table>
@@ -128,8 +129,8 @@
     </table>
 
     <script>
-        // Inicializa EmailJS con tu clave de usuario
-        emailjs.init("YOUR_USER_ID");  // Reemplaza con tu User ID de EmailJS
+        // Inicializa EmailJS con tu User ID
+        emailjs.init("f0qPRaYgt5aACOOlj");  // Aquí va tu propio User ID de EmailJS
 
         document.getElementById('itemForm').addEventListener('submit', function (event) {
             event.preventDefault();
@@ -251,16 +252,51 @@
             return buf;
         }
 
-        function sendEmailWithAttachment(formData) {
+        function sendEmailWithAttachment() {
+            // Recoger los datos de la tabla
+            const rows = Array.from(document.querySelectorAll('#itemList tr')).map(row => {
+                const cells = row.querySelectorAll('td');
+                const quantitySystem = cells[2].querySelector('input').value;
+                const quantityPhysical = cells[3].querySelector('input').value;
+                const difference = quantityPhysical - quantitySystem;
+                return `
+                    <tr>
+                        <td>${cells[0].textContent}</td>
+                        <td>${cells[1].textContent}</td>
+                        <td>${quantitySystem}</td>
+                        <td>${quantityPhysical}</td>
+                        <td>${difference}</td>
+                    </tr>
+                `;
+            }).join('');
+
+            // Crear el cuerpo del correo con la tabla
+            const tableHtml = `
+                <h2>Inventario de Artículos</h2>
+                <table border="1" style="border-collapse: collapse;">
+                    <thead>
+                        <tr>
+                            <th>Código</th>
+                            <th>Artículo</th>
+                            <th>Cantidad en Sistema</th>
+                            <th>Cantidad en Físico</th>
+                            <th>Diferencia</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${rows}
+                    </tbody>
+                </table>
+            `;
+
             const templateParams = {
                 to_email: "daniel.a.a1733@outlook.com",  // Correo de destino
                 subject: "Inventario de Artículos",
-                message: "Adjunto el archivo de inventario de artículos.",
-                attachment: formData
+                message: tableHtml,  // Aquí va el cuerpo con la tabla
             };
 
-            // Enviar el correo usando EmailJS con tu Service ID y Template ID
-            emailjs.sendForm("ilen71j", "rxtflbj", templateParams)
+            // Enviar el correo utilizando EmailJS
+            emailjs.send("ilen71j", "rxtflbj", templateParams)
                 .then(function(response) {
                     alert('Correo enviado exitosamente');
                 }, function(error) {
