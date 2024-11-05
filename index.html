@@ -111,6 +111,7 @@
         <button onclick="importExcel()"><i class="fas fa-file-import icon"></i>Importar desde Excel</button>
         <button onclick="exportToExcel()"><i class="fas fa-file-export icon"></i>Exportar a Excel</button>
         <button onclick="clearTable()"><i class="fas fa-trash-alt icon"></i>Limpiar Datos</button>
+        <button onclick="sendEmail()"><i class="fas fa-envelope icon"></i>Enviar por Correo</button>
     </div>
 
     <table>
@@ -120,6 +121,7 @@
                 <th>Artículo</th>
                 <th>Cantidad en Sistema</th>
                 <th>Cantidad en Físico</th>
+                <th>Diferencia</th>
             </tr>
         </thead>
         <tbody id="itemList">
@@ -148,12 +150,14 @@
         });
 
         function addItemToTable(code, name, quantitySystem, quantityPhysical) {
+            const difference = quantityPhysical - quantitySystem;  // Calcula la diferencia
             const row = document.createElement('tr');
             row.innerHTML = `
                 <td>${code}</td>
                 <td>${name}</td>
                 <td><input type="number" value="${quantitySystem}" min="0" readonly></td>
                 <td><input type="number" value="${quantityPhysical}" min="0"></td>
+                <td>${difference}</td>
             `;
             document.getElementById('itemList').appendChild(row);
         }
@@ -165,7 +169,8 @@
                     code: cells[0].textContent,
                     name: cells[1].textContent,
                     quantitySystem: cells[2].querySelector('input').value,
-                    quantityPhysical: cells[3].querySelector('input').value
+                    quantityPhysical: cells[3].querySelector('input').value,
+                    difference: cells[4].textContent
                 };
             });
             localStorage.setItem('inventoryData', JSON.stringify(rows));
@@ -235,7 +240,12 @@
             const formData = new FormData();
             formData.append("file", blob, fileName);
 
-            sendEmailWithAttachment(formData);
+            // Aquí puedes realizar cualquier acción adicional como enviar el archivo por email si es necesario
+            alert('Archivo de Excel generado.');
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = fileName;
+            link.click();
         }
 
         function s2ab(s) {
@@ -247,7 +257,7 @@
             return buf;
         }
 
-        function sendEmailWithAttachment(formData) {
+        function sendEmail() {
             const rows = Array.from(document.querySelectorAll('#itemList tr')).map(row => {
                 const cells = row.querySelectorAll('td');
                 const quantitySystem = cells[2].querySelector('input').value;
@@ -263,16 +273,16 @@
             });
 
             const templateParams = {
-                to_email: "daniel.a.a1733@outlook.com",  // Correo de destino
+                to_email: "daniel.a.a1733@outlook.com",
                 subject: "Inventario de Artículos",
                 message: "Adjunto el archivo de inventario de artículos.",
-                items: rows  // Pasar los datos de los artículos
+                items: rows  // Enviar los artículos con las diferencias
             };
 
             emailjs.sendForm("service_kjbvp26", "template_7fbf5nc", templateParams)
-                .then(function(response) {
+                .then(function (response) {
                     alert('Correo enviado exitosamente');
-                }, function(error) {
+                }, function (error) {
                     alert('Error al enviar el correo: ' + error.text);
                 });
         }
