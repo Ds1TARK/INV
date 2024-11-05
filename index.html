@@ -103,7 +103,6 @@
         <label for="itemInput">Ingrese Artículos (código, artículo, cantidad en sistema, cantidad en físico):</label>
         <textarea id="itemInput" rows="4" required></textarea>
         <button type="submit"><i class="fas fa-plus icon"></i>Agregar Artículos</button>
-        <button type="button" id="saveButton"><i class="fas fa-save icon"></i>Guardar en Google Sheets</button>
     </form>
 
     <div class="action-buttons">
@@ -143,48 +142,6 @@
             document.getElementById('itemForm').reset();
             saveDataToLocalStorage();
         });
-
-        document.getElementById('saveButton').addEventListener('click', function () {
-            const rows = Array.from(document.querySelectorAll('#itemList tr')).map(row => {
-                const cells = row.querySelectorAll('td');
-                return {
-                    code: cells[0].textContent,
-                    name: cells[1].textContent,
-                    quantitySystem: cells[2].querySelector('input').value,
-                    quantityPhysical: cells[3].querySelector('input').value
-                };
-            });
-
-            if (rows.length > 0) {
-                saveDataToGoogleSheets(rows);
-            } else {
-                alert("No hay datos para guardar.");
-            }
-        });
-
-        function saveDataToGoogleSheets(data) {
-            fetch('https://script.google.com/macros/s/AKfycbyFAjKG_EeUBPjUURvaAkmLyWsD9htQUC0Nk95sVJTCPZXrL6jwVT2Vw26qHYES1jZ7/exec', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(data)
-            })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error("Error en la respuesta del servidor: " + response.statusText);
-                }
-                return response.text();
-            })
-            .then(result => {
-                alert("Datos guardados correctamente.");
-                console.log(result);
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert("Hubo un error al guardar los datos: " + error.message);
-            });
-        }
 
         function addItemToTable(code, name, quantitySystem, quantityPhysical) {
             const row = document.createElement('tr');
