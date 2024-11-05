@@ -111,7 +111,6 @@
         <button onclick="importExcel()"><i class="fas fa-file-import icon"></i>Importar desde Excel</button>
         <button onclick="exportToExcel()"><i class="fas fa-file-export icon"></i>Exportar a Excel</button>
         <button onclick="clearTable()"><i class="fas fa-trash-alt icon"></i>Limpiar Datos</button>
-        <button onclick="sendEmailWithAttachment()"><i class="fas fa-envelope icon"></i>Enviar por Correo</button>
     </div>
 
     <table>
@@ -129,8 +128,8 @@
     </table>
 
     <script>
-        // Inicializa EmailJS con tu clave pública correcta
-        emailjs.init("f0z_66d6oZ5MOR0eQn0Z5", "F0qPRaYgt5aACOOlj");  // Aquí va la Public Key correcta
+        // Inicializa EmailJS con tu clave de usuario
+        emailjs.init("F0qPRaYgt5aACOOlj");  // Tu clave pública de EmailJS
 
         document.getElementById('itemForm').addEventListener('submit', function (event) {
             event.preventDefault();
@@ -191,10 +190,10 @@
             const reader = new FileReader();
             reader.onload = function (event) {
                 const data = new Uint8Array(event.target.result);
-                const workbook = XLSX.read(data, { type: 'array' });
+                const workbook = XLSX.read(data, {type: 'array'});
 
                 const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-                const json = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+                const json = XLSX.utils.sheet_to_json(firstSheet, {header: 1});
 
                 json.forEach(row => {
                     if (row.length >= 4) {
@@ -228,18 +227,14 @@
             const workbook = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(workbook, worksheet, "Inventario");
 
-            // Generar archivo Excel en formato binario
             const excelFile = XLSX.write(workbook, { bookType: "xlsx", type: "binary" });
 
-            // Convertir el archivo binario a un Blob
             const blob = new Blob([s2ab(excelFile)], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
             const fileName = 'inventario_articulos.xlsx';
 
-            // Crear un FormData y adjuntar el archivo Excel
             const formData = new FormData();
             formData.append("file", blob, fileName);
 
-            // Enviar el archivo por correo a través de EmailJS
             sendEmailWithAttachment(formData);
         }
 
@@ -253,15 +248,28 @@
         }
 
         function sendEmailWithAttachment(formData) {
+            const rows = Array.from(document.querySelectorAll('#itemList tr')).map(row => {
+                const cells = row.querySelectorAll('td');
+                const quantitySystem = cells[2].querySelector('input').value;
+                const quantityPhysical = cells[3].querySelector('input').value;
+                const difference = quantityPhysical - quantitySystem;
+                return {
+                    code: cells[0].textContent,
+                    name: cells[1].textContent,
+                    quantitySystem: quantitySystem,
+                    quantityPhysical: quantityPhysical,
+                    difference: difference
+                };
+            });
+
             const templateParams = {
                 to_email: "daniel.a.a1733@outlook.com",  // Correo de destino
                 subject: "Inventario de Artículos",
                 message: "Adjunto el archivo de inventario de artículos.",
-                attachment: formData
+                items: rows  // Pasar los datos de los artículos
             };
 
-            // Enviar el correo usando EmailJS con tu Service ID y Template ID
-            emailjs.sendForm("service_kjbvp26", "rxtflbj", templateParams)
+            emailjs.sendForm("service_kjbvp26", "template_7fbf5nc", templateParams)
                 .then(function(response) {
                     alert('Correo enviado exitosamente');
                 }, function(error) {
@@ -274,7 +282,6 @@
             localStorage.removeItem('inventoryData');
         }
 
-        // Cargar datos de localStorage cuando la página se cargue
         window.onload = loadDataFromLocalStorage;
     </script>
 </body>
