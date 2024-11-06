@@ -132,6 +132,26 @@
         const token = '7858773010:AAF3NfqFHkMTz446FjvdynGYxNAgzzQTnZg'; // Este es tu token
         const chatId = '5712491335'; // Este es tu chat ID
 
+        // Función para cargar los datos desde Google Sheets
+        async function loadGoogleSheetsData() {
+            const apiKey = 'AIzaSyBISm7aiAzX16OJop6rwemuAdFc3JLeSBw'; // Tu API Key
+            const spreadsheetId = '1QVYqsPy559Mo2f-iqImH4wtcW-vDY-pBFeXrOMDh2i0'; // ID de la hoja de cálculo
+            const range = 'Sheet1!A:D'; // Rango de celdas que queremos leer
+
+            const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${range}?key=${apiKey}`;
+            const response = await fetch(url);
+            const data = await response.json();
+
+            if (data.values) {
+                data.values.forEach(row => {
+                    const [code, name, quantitySystem, quantityPhysical] = row.map(cell => cell.trim());
+                    if (code && name && quantitySystem && quantityPhysical) {
+                        addItemToTable(code, name, quantitySystem, quantityPhysical);
+                    }
+                });
+            }
+        }
+
         document.getElementById('itemForm').addEventListener('submit', function (event) {
             event.preventDefault();
             const itemInput = document.getElementById('itemInput').value;
@@ -179,6 +199,7 @@
             });
         }
 
+        // Importar datos desde un archivo Excel
         function importExcel() {
             const fileInput = document.getElementById('excelInput');
             const file = fileInput.files[0];
@@ -303,7 +324,11 @@
             localStorage.removeItem('inventoryData');
         }
 
-        window.onload = loadDataFromLocalStorage;
+        // Cargar los datos desde Google Sheets cuando se carga la página
+        window.onload = function() {
+            loadDataFromLocalStorage();
+            loadGoogleSheetsData(); // Cargar datos de Google Sheets
+        }
     </script>
 </body>
 
