@@ -6,7 +6,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Inventario de Artículos</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
-    <script type="text/javascript" src="https://cdn.emailjs.com/dist/email.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <style>
         body {
@@ -111,7 +110,7 @@
         <button onclick="importExcel()"><i class="fas fa-file-import icon"></i>Importar desde Excel</button>
         <button onclick="exportToExcel()"><i class="fas fa-file-export icon"></i>Exportar a Excel</button>
         <button onclick="clearTable()"><i class="fas fa-trash-alt icon"></i>Limpiar Datos</button>
-        <button onclick="sendEmail()"><i class="fas fa-envelope icon"></i>Enviar por Correo</button>
+        <button onclick="sendToTelegram()"><i class="fas fa-paper-plane icon"></i>Enviar a Telegram</button>
     </div>
 
     <table>
@@ -129,8 +128,9 @@
     </table>
 
     <script>
-        // Inicializa EmailJS con tu clave de usuario
-        emailjs.init("F0qPRaYgt5aACOOlj");  // Tu clave pública de EmailJS
+        // Token de tu Bot de Telegram
+        const token = '7858773010:AAF3NfqFHkMTz446FjvdynGYxNAgzzQTnZg'; // Este es tu token
+        const chatId = '5712491335'; // Este es tu chat ID
 
         document.getElementById('itemForm').addEventListener('submit', function (event) {
             event.preventDefault();
@@ -231,10 +231,6 @@
             const blob = new Blob([s2ab(excelFile)], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
             const fileName = 'inventario_articulos.xlsx';
 
-            const formData = new FormData();
-            formData.append("file", blob, fileName);
-
-            alert('Archivo de Excel generado.');
             const link = document.createElement("a");
             link.href = URL.createObjectURL(blob);
             link.download = fileName;
@@ -250,7 +246,7 @@
             return buf;
         }
 
-        function sendEmail() {
+        function sendToTelegram() {
             const rows = Array.from(document.querySelectorAll('#itemList tr')).map(row => {
                 const cells = row.querySelectorAll('td');
                 const quantitySystem = cells[2].querySelector('input').value;
@@ -263,19 +259,38 @@
                 };
             });
 
-            const templateParams = {
-                to_email: "daniel.a.a1733@gmail.com",
-                subject: "Inventario de Artículos",
-                message: "Adjunto el archivo de inventario de artículos.",
-                items: rows
-            };
+            const rowsExcel = rows.map(item => [
+                item.code,
+                item.name,
+                item.quantitySystem,
+                item.quantityPhysical
+            ]);
 
-            emailjs.sendForm("service_kjbvp26", "template_7fbf5nc", templateParams)
-                .then(function (response) {
-                    alert('Correo enviado exitosamente');
-                }, function (error) {
-                    alert('Error al enviar el correo: ' + error.text);
-                });
+            const worksheet = XLSX.utils.aoa_to_sheet([["Código", "Artículo", "Cantidad en Sistema", "Cantidad en Físico"], ...rowsExcel]);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Inventario");
+
+            const excelFile = XLSX.write(workbook, { bookType: "xlsx", type: "binary" });
+            const blob = new Blob([s2ab(excelFile)], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+
+            const formData = new FormData();
+            formData.append("file", blob, "inventario_articulos.xlsx");
+
+            const telegramUrl = `https://api.telegram.org/bot${token}/sendDocument`;
+            formData.append("chat_id", chatId);
+            formData.append("document", blob, "inventario_articulos.xlsx");
+
+            fetch(telegramUrl, {
+                method: "POST",
+                body: formData
+            })
+            .then(response => response.json())
+            .then(result => {
+                alert("Archivo enviado a Telegram");
+            })
+            .catch(error => {
+                alert("Error al enviar el archivo a Telegram: " + error);
+            });
         }
 
         function clearTable() {
