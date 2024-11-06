@@ -111,6 +111,8 @@
         <button onclick="exportToExcel()"><i class="fas fa-file-export icon"></i>Exportar a Excel</button>
         <button onclick="clearTable()"><i class="fas fa-trash-alt icon"></i>Limpiar Datos</button>
         <button onclick="sendToTelegram()"><i class="fas fa-paper-plane icon"></i>Enviar a Telegram</button>
+        <!-- Botón para cargar datos desde Google Sheets -->
+        <button onclick="loadGoogleSheetsData()"><i class="fas fa-cloud-download-alt icon"></i>Cargar desde Google Sheets</button>
     </div>
 
     <table>
@@ -143,12 +145,18 @@
             const data = await response.json();
 
             if (data.values) {
+                // Limpiar la tabla antes de cargar nuevos datos
+                document.getElementById('itemList').innerHTML = '';
+
+                // Agregar los datos de Google Sheets a la tabla
                 data.values.forEach(row => {
                     const [code, name, quantitySystem, quantityPhysical] = row.map(cell => cell.trim());
                     if (code && name && quantitySystem && quantityPhysical) {
                         addItemToTable(code, name, quantitySystem, quantityPhysical);
                     }
                 });
+            } else {
+                alert('No se pudieron cargar los datos de Google Sheets.');
             }
         }
 
@@ -230,6 +238,7 @@
             reader.readAsArrayBuffer(file);
         }
 
+        // Función para exportar a Excel
         function exportToExcel() {
             const rows = Array.from(document.querySelectorAll('#itemList tr')).map(row => {
                 const cells = row.querySelectorAll('td');
@@ -324,11 +333,7 @@
             localStorage.removeItem('inventoryData');
         }
 
-        // Cargar los datos desde Google Sheets cuando se carga la página
-        window.onload = function() {
-            loadDataFromLocalStorage();
-            loadGoogleSheetsData(); // Cargar datos de Google Sheets
-        }
+        window.onload = loadDataFromLocalStorage;
     </script>
 </body>
 
