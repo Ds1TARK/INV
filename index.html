@@ -111,8 +111,7 @@
         <button onclick="exportToExcel()"><i class="fas fa-file-export icon"></i>Exportar a Excel</button>
         <button onclick="clearTable()"><i class="fas fa-trash-alt icon"></i>Limpiar Datos</button>
         <button onclick="sendToTelegram()"><i class="fas fa-paper-plane icon"></i>Enviar a Telegram</button>
-        <!-- Botón para cargar datos desde Google Sheets -->
-        <button onclick="loadGoogleSheetsData()"><i class="fas fa-cloud-download-alt icon"></i>Cargar desde Google Sheets</button>
+        <button onclick="loadGoogleSheetsData()"><i class="fas fa-sync icon"></i>Cargar desde Google Sheets</button>
     </div>
 
     <table>
@@ -133,32 +132,6 @@
         // Token de tu Bot de Telegram
         const token = '7858773010:AAF3NfqFHkMTz446FjvdynGYxNAgzzQTnZg'; // Este es tu token
         const chatId = '5712491335'; // Este es tu chat ID
-
-        // Función para cargar los datos desde Google Sheets
-        async function loadGoogleSheetsData() {
-            const apiKey = 'AIzaSyBISm7aiAzX16OJop6rwemuAdFc3JLeSBw'; // Tu API Key
-            const spreadsheetId = '1QVYqsPy559Mo2f-iqImH4wtcW-vDY-pBFeXrOMDh2i0'; // ID de la hoja de cálculo
-            const range = 'CICLICO!A1:D27'; // Rango de celdas que queremos leer
-
-            const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${range}?key=${apiKey}`;
-            const response = await fetch(url);
-            const data = await response.json();
-
-            if (data.values) {
-                // Limpiar la tabla antes de cargar nuevos datos
-                document.getElementById('itemList').innerHTML = '';
-
-                // Agregar los datos de Google Sheets a la tabla
-                data.values.forEach(row => {
-                    const [code, name, quantitySystem, quantityPhysical] = row.map(cell => cell.trim());
-                    if (code && name && quantitySystem && quantityPhysical) {
-                        addItemToTable(code, name, quantitySystem, quantityPhysical);
-                    }
-                });
-            } else {
-                alert('No se pudieron cargar los datos de Google Sheets.');
-            }
-        }
 
         document.getElementById('itemForm').addEventListener('submit', function (event) {
             event.preventDefault();
@@ -207,7 +180,6 @@
             });
         }
 
-        // Importar datos desde un archivo Excel
         function importExcel() {
             const fileInput = document.getElementById('excelInput');
             const file = fileInput.files[0];
@@ -238,7 +210,6 @@
             reader.readAsArrayBuffer(file);
         }
 
-        // Función para exportar a Excel
         function exportToExcel() {
             const rows = Array.from(document.querySelectorAll('#itemList tr')).map(row => {
                 const cells = row.querySelectorAll('td');
@@ -331,6 +302,38 @@
         function clearTable() {
             document.getElementById('itemList').innerHTML = '';
             localStorage.removeItem('inventoryData');
+        }
+
+        async function loadGoogleSheetsData() {
+            const apiKey = 'AIzaSyBISm7aiAzX16OJop6rwemuAdFc3JLeSBw'; // Tu API Key
+            const spreadsheetId = '1QVYqsPy559Mo2f-iqImH4wtcW-vDY-pBFeXrOMDh2i0'; // ID de la hoja de cálculo
+            const range = 'CICLICO!A:D'; // Nombre de la hoja actualizado
+
+            const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${range}?key=${apiKey}`;
+            try {
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                console.log(data); // Imprime la respuesta para verificar
+
+                if (data.values) {
+                    // Limpiar la tabla antes de cargar nuevos datos
+                    document.getElementById('itemList').innerHTML = '';
+
+                    // Agregar los datos de Google Sheets a la tabla
+                    data.values.forEach(row => {
+                        const [code, name, quantitySystem, quantityPhysical] = row.map(cell => cell.trim());
+                        if (code && name && quantitySystem && quantityPhysical) {
+                            addItemToTable(code, name, quantitySystem, quantityPhysical);
+                        }
+                    });
+                } else {
+                    alert('No se pudieron cargar los datos de Google Sheets.');
+                }
+            } catch (error) {
+                console.error('Error al cargar datos de Google Sheets:', error);
+                alert('Hubo un error al intentar cargar los datos desde Google Sheets.');
+            }
         }
 
         window.onload = loadDataFromLocalStorage;
