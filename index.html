@@ -120,7 +120,6 @@
                 <th>Artículo</th>
                 <th>Cantidad en Sistema</th>
                 <th>Cantidad en Físico</th>
-                <th>Diferencia</th> <!-- Nueva columna para la diferencia -->
             </tr>
         </thead>
         <tbody id="itemList">
@@ -151,14 +150,11 @@
 
         function addItemToTable(code, name, quantitySystem, quantityPhysical) {
             const row = document.createElement('tr');
-            const difference = quantityPhysical - quantitySystem; // Calculamos la diferencia
-
             row.innerHTML = `
                 <td>${code}</td>
                 <td>${name}</td>
                 <td><input type="number" value="${quantitySystem}" min="0" readonly></td> <!-- Solo lectura -->
                 <td><input type="number" value="${quantityPhysical}" min="0"></td> <!-- Editable -->
-                <td>${difference}</td> <!-- Columna de diferencia -->
             `;
             document.getElementById('itemList').appendChild(row);
         }
@@ -224,7 +220,7 @@
                     cells[1].textContent,
                     quantitySystem,
                     quantityPhysical,
-                    difference
+                    difference // Agregamos la diferencia
                 ];
             });
 
@@ -272,7 +268,7 @@
                 item.name,
                 item.quantitySystem,
                 item.quantityPhysical,
-                item.difference
+                item.difference // Incluimos la diferencia
             ]);
 
             const worksheet = XLSX.utils.aoa_to_sheet([["Código", "Artículo", "Cantidad en Sistema", "Cantidad en Físico", "Diferencia"], ...rowsExcel]);
