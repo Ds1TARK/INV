@@ -138,7 +138,7 @@
         async function loadGoogleSheetsData() {
             const apiKey = 'AIzaSyBISm7aiAzX16OJop6rwemuAdFc3JLeSBw'; // Tu API Key
             const spreadsheetId = '1QVYqsPy559Mo2f-iqImH4wtcW-vDY-pBFeXrOMDh2i0'; // ID de la hoja de cálculo
-            const range = 'Sheet1!A:D'; // Rango de celdas que queremos leer
+            const range = 'CICLICO!A1:D27'; // Rango de celdas que queremos leer
 
             const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${range}?key=${apiKey}`;
             const response = await fetch(url);
