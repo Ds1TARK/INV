@@ -110,6 +110,7 @@
         <input type="file" id="excelInput" accept=".xlsx" />
         <button onclick="importExcel()"><i class="fas fa-file-import icon"></i>Importar desde Excel</button>
         <button onclick="exportToExcel()"><i class="fas fa-file-export icon"></i>Exportar a Excel</button>
+        <button onclick="saveToExcel()"><i class="fas fa-save icon"></i>Guardar en Excel</button>
         <button onclick="clearTable()"><i class="fas fa-trash-alt icon"></i>Limpiar Datos</button>
         <button onclick="sendEmail()"><i class="fas fa-envelope icon"></i>Enviar por Correo</button>
     </div>
@@ -236,7 +237,34 @@
             const formData = new FormData();
             formData.append("file", blob, fileName);
 
+            // Aquí puedes realizar cualquier acción adicional como enviar el archivo por email si es necesario
             alert('Archivo de Excel generado.');
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = fileName;
+            link.click();
+        }
+
+        function saveToExcel() {
+            const rows = Array.from(document.querySelectorAll('#itemList tr')).map(row => {
+                const cells = row.querySelectorAll('td');
+                return [
+                    cells[0].textContent,
+                    cells[1].textContent,
+                    cells[2].querySelector('input').value,
+                    cells[3].querySelector('input').value
+                ];
+            });
+
+            const worksheet = XLSX.utils.aoa_to_sheet([["Código", "Artículo", "Cantidad en Sistema", "Cantidad en Físico"], ...rows]);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Inventario");
+
+            const excelFile = XLSX.write(workbook, { bookType: "xlsx", type: "binary" });
+
+            const blob = new Blob([s2ab(excelFile)], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+            const fileName = 'inventario_articulos_guardado.xlsx';
+
             const link = document.createElement("a");
             link.href = URL.createObjectURL(blob);
             link.download = fileName;
@@ -257,23 +285,21 @@
                 const cells = row.querySelectorAll('td');
                 const quantitySystem = cells[2].querySelector('input').value;
                 const quantityPhysical = cells[3].querySelector('input').value;
-                const difference = quantityPhysical - quantitySystem;  // Calcula la diferencia
-                return `
-                    <p><strong>Código:</strong> ${cells[0].textContent}</p>
-                    <p><strong>Artículo:</strong> ${cells[1].textContent}</p>
-                    <p><strong>Cantidad en Sistema:</strong> ${quantitySystem}</p>
-                    <p><strong>Cantidad en Físico:</strong> ${quantityPhysical}</p>
-                    <p><strong>Diferencia:</strong> ${difference}</p>
-                    <hr />
-                `;
+                const difference = quantityPhysical - quantitySystem;
+                return {
+                    code: cells[0].textContent,
+                    name: cells[1].textContent,
+                    quantitySystem: quantitySystem,
+                    quantityPhysical: quantityPhysical,
+                    difference: difference
+                };
             });
-
-            const messageBody = rows.join(''); // Unir todas las filas en una cadena
 
             const templateParams = {
                 to_email: "daniel.a.a1733@outlook.com",
                 subject: "Inventario de Artículos",
-                message: `<h2>Inventario de Artículos</h2>${messageBody}` // Incluir las filas formateadas
+                message: "Adjunto el archivo de inventario de artículos.",
+                items: rows  // Enviar los artículos con las diferencias
             };
 
             emailjs.sendForm("service_kjbvp26", "template_7fbf5nc", templateParams)
