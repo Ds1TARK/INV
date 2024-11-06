@@ -120,6 +120,7 @@
                 <th>Artículo</th>
                 <th>Cantidad en Sistema</th>
                 <th>Cantidad en Físico</th>
+                <th>Diferencia</th> <!-- Nueva columna para la diferencia -->
             </tr>
         </thead>
         <tbody id="itemList">
@@ -150,11 +151,14 @@
 
         function addItemToTable(code, name, quantitySystem, quantityPhysical) {
             const row = document.createElement('tr');
+            const difference = quantityPhysical - quantitySystem; // Calculamos la diferencia
+
             row.innerHTML = `
                 <td>${code}</td>
                 <td>${name}</td>
-                <td><input type="number" value="${quantitySystem}" min="0" readonly></td>
-                <td><input type="number" value="${quantityPhysical}" min="0"></td>
+                <td><input type="number" value="${quantitySystem}" min="0" readonly></td> <!-- Solo lectura -->
+                <td><input type="number" value="${quantityPhysical}" min="0"></td> <!-- Editable -->
+                <td>${difference}</td> <!-- Columna de diferencia -->
             `;
             document.getElementById('itemList').appendChild(row);
         }
@@ -214,15 +218,17 @@
                 const cells = row.querySelectorAll('td');
                 const quantitySystem = cells[2].querySelector('input').value;
                 const quantityPhysical = cells[3].querySelector('input').value;
+                const difference = quantityPhysical - quantitySystem; // Calculamos la diferencia
                 return [
                     cells[0].textContent,
                     cells[1].textContent,
                     quantitySystem,
-                    quantityPhysical
+                    quantityPhysical,
+                    difference
                 ];
             });
 
-            const worksheet = XLSX.utils.aoa_to_sheet([["Código", "Artículo", "Cantidad en Sistema", "Cantidad en Físico"], ...rows]);
+            const worksheet = XLSX.utils.aoa_to_sheet([["Código", "Artículo", "Cantidad en Sistema", "Cantidad en Físico", "Diferencia"], ...rows]);
             const workbook = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(workbook, worksheet, "Inventario");
 
@@ -251,11 +257,13 @@
                 const cells = row.querySelectorAll('td');
                 const quantitySystem = cells[2].querySelector('input').value;
                 const quantityPhysical = cells[3].querySelector('input').value;
+                const difference = quantityPhysical - quantitySystem; // Calculamos la diferencia
                 return {
                     code: cells[0].textContent,
                     name: cells[1].textContent,
                     quantitySystem: quantitySystem,
-                    quantityPhysical: quantityPhysical
+                    quantityPhysical: quantityPhysical,
+                    difference: difference
                 };
             });
 
@@ -263,10 +271,11 @@
                 item.code,
                 item.name,
                 item.quantitySystem,
-                item.quantityPhysical
+                item.quantityPhysical,
+                item.difference
             ]);
 
-            const worksheet = XLSX.utils.aoa_to_sheet([["Código", "Artículo", "Cantidad en Sistema", "Cantidad en Físico"], ...rowsExcel]);
+            const worksheet = XLSX.utils.aoa_to_sheet([["Código", "Artículo", "Cantidad en Sistema", "Cantidad en Físico", "Diferencia"], ...rowsExcel]);
             const workbook = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(workbook, worksheet, "Inventario");
 
