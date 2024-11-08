@@ -5,7 +5,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Inventario de Artículos</title>
-    <script src="https://cdn.socket.io/4.1.3/socket.io.min.js"></script> <!-- Agregado para WebSocket -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <style>
@@ -111,6 +110,8 @@
         <button onclick="importExcel()"><i class="fas fa-file-import icon"></i>Importar desde Excel</button>
         <button onclick="exportToExcel()"><i class="fas fa-file-export icon"></i>Exportar a Excel</button>
         <button onclick="clearTable()"><i class="fas fa-trash-alt icon"></i>Limpiar Datos</button>
+        <button onclick="sendToTelegram()"><i class="fas fa-paper-plane icon"></i>Enviar a Telegram</button>
+        <button onclick="loadGoogleSheetsData()"><i class="fas fa-sync icon"></i>Cargar desde Google Sheets</button>
     </div>
 
     <table>
@@ -128,17 +129,10 @@
     </table>
 
     <script>
-        // Conexión con el servidor WebSocket
-        const socket = io(); // Conectar al servidor WebSocket
-
         // Token de tu Bot de Telegram
         const token = '7858773010:AAF3NfqFHkMTz446FjvdynGYxNAgzzQTnZg'; // Este es tu token
         const chatId = '5712491335'; // Este es tu chat ID
 
-        // Cargar datos de LocalStorage cuando la página se cargue
-        window.onload = loadDataFromLocalStorage;
-
-        // Conectar formulario de ingreso de artículos
         document.getElementById('itemForm').addEventListener('submit', function (event) {
             event.preventDefault();
             const itemInput = document.getElementById('itemInput').value;
@@ -153,24 +147,19 @@
 
             document.getElementById('itemForm').reset();
             saveDataToLocalStorage();
-
-            // Emitir los datos a través de WebSocket
-            socket.emit('sendExcel', items);
         });
 
-        // Función para agregar un artículo a la tabla
         function addItemToTable(code, name, quantitySystem, quantityPhysical) {
             const row = document.createElement('tr');
-            row.innerHTML = `
+            row.innerHTML = 
                 <td>${code}</td>
                 <td>${name}</td>
-                <td><input type="number" value="${quantitySystem}" readonly></td> <!-- Solo lectura -->
+                <td><input type="number" value="${quantitySystem}" min="0" readonly></td> <!-- Solo lectura -->
                 <td><input type="number" value="${quantityPhysical}" min="0"></td> <!-- Editable -->
-            `;
+            ;
             document.getElementById('itemList').appendChild(row);
         }
 
-        // Guardar los datos en LocalStorage
         function saveDataToLocalStorage() {
             const rows = Array.from(document.querySelectorAll('#itemList tr')).map(row => {
                 const cells = row.querySelectorAll('td');
@@ -184,7 +173,6 @@
             localStorage.setItem('inventoryData', JSON.stringify(rows));
         }
 
-        // Cargar los datos de LocalStorage
         function loadDataFromLocalStorage() {
             const data = JSON.parse(localStorage.getItem('inventoryData') || '[]');
             data.forEach(item => {
@@ -192,7 +180,6 @@
             });
         }
 
-        // Función para importar un archivo Excel
         function importExcel() {
             const fileInput = document.getElementById('excelInput');
             const file = fileInput.files[0];
@@ -218,16 +205,11 @@
                         }
                     }
                 });
-
                 saveDataToLocalStorage();
-
-                // Emitir los datos a través de WebSocket
-                socket.emit('sendExcel', json);
             };
             reader.readAsArrayBuffer(file);
         }
 
-        // Función para exportar a Excel
         function exportToExcel() {
             const rows = Array.from(document.querySelectorAll('#itemList tr')).map(row => {
                 const cells = row.querySelectorAll('td');
@@ -258,7 +240,6 @@
             link.click();
         }
 
-        // Función para convertir la cadena binaria a un ArrayBuffer
         function s2ab(s) {
             const buf = new ArrayBuffer(s.length);
             const view = new Uint8Array(buf);
@@ -268,20 +249,94 @@
             return buf;
         }
 
-        // Función para limpiar la tabla
+        function sendToTelegram() {
+            const rows = Array.from(document.querySelectorAll('#itemList tr')).map(row => {
+                const cells = row.querySelectorAll('td');
+                const quantitySystem = cells[2].querySelector('input').value;
+                const quantityPhysical = cells[3].querySelector('input').value;
+                const difference = quantityPhysical - quantitySystem; // Calculamos la diferencia
+                return {
+                    code: cells[0].textContent,
+                    name: cells[1].textContent,
+                    quantitySystem: quantitySystem,
+                    quantityPhysical: quantityPhysical,
+                    difference: difference
+                };
+            });
+
+            const rowsExcel = rows.map(item => [
+                item.code,
+                item.name,
+                item.quantitySystem,
+                item.quantityPhysical,
+                item.difference // Incluimos la diferencia
+            ]);
+
+            const worksheet = XLSX.utils.aoa_to_sheet([["Código", "Artículo", "Cantidad en Sistema", "Cantidad en Físico", "Diferencia"], ...rowsExcel]);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Inventario");
+
+            const excelFile = XLSX.write(workbook, { bookType: "xlsx", type: "binary" });
+            const blob = new Blob([s2ab(excelFile)], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+
+            const formData = new FormData();
+            formData.append("file", blob, "inventario_articulos.xlsx");
+
+            const telegramUrl = https://api.telegram.org/bot${token}/sendDocument;
+            formData.append("chat_id", chatId);
+            formData.append("document", blob, "inventario_articulos.xlsx");
+
+            fetch(telegramUrl, {
+                method: "POST",
+                body: formData
+            })
+            .then(response => response.json())
+            .then(result => {
+                alert("Archivo enviado a Telegram");
+            })
+            .catch(error => {
+                alert("Error al enviar el archivo a Telegram: " + error);
+            });
+        }
+
         function clearTable() {
             document.getElementById('itemList').innerHTML = '';
             localStorage.removeItem('inventoryData');
         }
 
-        // Sincronización con otros clientes a través de WebSocket
-        socket.on('updateData', function (data) {
-            // Limpiar la tabla antes de actualizar
-            document.getElementById('itemList').innerHTML = '';
-            data.forEach(item => {
-                addItemToTable(item.code, item.name, item.quantitySystem, item.quantityPhysical);
-            });
-        });
+        async function loadGoogleSheetsData() {
+            const apiKey = 'AIzaSyBISm7aiAzX16OJop6rwemuAdFc3JLeSBw'; // Tu API Key
+            const spreadsheetId = '1QVYqsPy559Mo2f-iqImH4wtcW-vDY-pBFeXrOMDh2i0'; // ID de la hoja de cálculo
+            const range = 'CICLICO!A:D'; // Nombre de la hoja actualizado
+
+            const url = https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${range}?key=${apiKey};
+            try {
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                console.log(data); // Imprime la respuesta para verificar
+
+                if (data.values) {
+                    // Limpiar la tabla antes de cargar nuevos datos
+                    document.getElementById('itemList').innerHTML = '';
+
+                    // Agregar los datos de Google Sheets a la tabla
+                    data.values.forEach(row => {
+                        const [code, name, quantitySystem, quantityPhysical] = row.map(cell => cell.trim());
+                        if (code && name && quantitySystem && quantityPhysical) {
+                            addItemToTable(code, name, quantitySystem, quantityPhysical);
+                        }
+                    });
+                } else {
+                    alert('No se pudieron cargar los datos de Google Sheets.');
+                }
+            } catch (error) {
+                console.error('Error al cargar datos de Google Sheets:', error);
+                alert('Hubo un error al intentar cargar los datos desde Google Sheets.');
+            }
+        }
+
+        window.onload = loadDataFromLocalStorage;
     </script>
 </body>
 
