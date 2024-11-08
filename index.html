@@ -151,12 +151,12 @@
 
         function addItemToTable(code, name, quantitySystem, quantityPhysical) {
             const row = document.createElement('tr');
-            row.innerHTML = 
+            row.innerHTML = `
                 <td>${code}</td>
                 <td>${name}</td>
                 <td><input type="number" value="${quantitySystem}" min="0" readonly></td> <!-- Solo lectura -->
                 <td><input type="number" value="${quantityPhysical}" min="0"></td> <!-- Editable -->
-            ;
+            `;
             document.getElementById('itemList').appendChild(row);
         }
 
@@ -282,7 +282,7 @@
             const formData = new FormData();
             formData.append("file", blob, "inventario_articulos.xlsx");
 
-            const telegramUrl = https://api.telegram.org/bot${token}/sendDocument;
+            const telegramUrl = `https://api.telegram.org/bot${token}/sendDocument`;
             formData.append("chat_id", chatId);
             formData.append("document", blob, "inventario_articulos.xlsx");
 
