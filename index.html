@@ -309,7 +309,7 @@
             const spreadsheetId = '1QVYqsPy559Mo2f-iqImH4wtcW-vDY-pBFeXrOMDh2i0'; // ID de la hoja de cálculo
             const range = 'CICLICO!A:D'; // Nombre de la hoja actualizado
 
-            const url = https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${range}?key=${apiKey};
+            const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${range}?key=${apiKey}`;
             try {
                 const response = await fetch(url);
                 const data = await response.json();
