@@ -1,10 +1,10 @@
 // Configura tu Client ID y API Key
-const CLIENT_ID = 'TU_CLIENT_ID';
-const API_KEY = 'TU_API_KEY';
+const CLIENT_ID = '682688471989-i42vr76t42di5921iarapiklosldo7b7.apps.googleusercontent.com';
+const API_KEY = 'AIzaSyB8jZxcuFvLvf2CjVjVhT6hLRUw3Gk-8jk';
 
 // ID de la hoja de Google Sheets y el rango donde se escribirán los datos
-const SPREADSHEET_ID = 'TU_SPREADSHEET_ID';
-const RANGO = 'Hoja1!A:C';
+const SPREADSHEET_ID = '1QVYqsPy559Mo2f-iqImH4wtcW-vDY-pBFeXrOMDh2i0';
+const RANGO = 'DATA!A:C';
 
 // Permisos que solicitará la API
 const SCOPES = 'https://www.googleapis.com/auth/spreadsheets';
