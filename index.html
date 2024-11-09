@@ -338,6 +338,27 @@
 
         window.onload = loadDataFromLocalStorage;
     </script>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Exportar Datos a Google Sheets</title>
+</head>
+<body>
+  <h2>Formulario de Exportación a Google Sheets</h2>
+  <form id="miFormulario">
+    <input type="text" id="nombre" placeholder="Nombre" required>
+    <input type="email" id="email" placeholder="Email" required>
+    <textarea id="comentario" placeholder="Comentario" required></textarea>
+    <button type="submit">Enviar</button>
+  </form>
+
+  <p id="estado"></p>
+
+  <!-- Cargar librería de Google API -->
+  <script src="https://apis.google.com/js/api.js"></script>
+  <!-- Archivo de JavaScript -->
+  <script src="script.js"></script>
 </body>
 
 </html>
