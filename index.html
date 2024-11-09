@@ -320,45 +320,6 @@
                     // Limpiar la tabla antes de cargar nuevos datos
                     document.getElementById('itemList').innerHTML = '';
 
-                    // Agregar los datos de Google Sheets a la tabla
-                    data.values.forEach(row => {
-                        const [code, name, quantitySystem, quantityPhysical] = row.map(cell => cell.trim());
-                        if (code && name && quantitySystem && quantityPhysical) {
-                            addItemToTable(code, name, quantitySystem, quantityPhysical);
-                        }
-                    });
-                } else {
-                    alert('No se pudieron cargar los datos de Google Sheets.');
-                }
-            } catch (error) {
-                console.error('Error al cargar datos de Google Sheets:', error);
-                alert('Hubo un error al intentar cargar los datos desde Google Sheets.');
-            }
-        }
-
-        window.onload = loadDataFromLocalStorage;
-    </script>
-<html lang="es">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Exportar Datos a Google Sheets</title>
-</head>
-<body>
-  <h2>Formulario de Exportación a Google Sheets</h2>
-  <form id="miFormulario">
-    <input type="text" id="nombre" placeholder="Nombre" required>
-    <input type="email" id="email" placeholder="Email" required>
-    <textarea id="comentario" placeholder="Comentario" required></textarea>
-    <button type="submit">Enviar</button>
-  </form>
-
-  <p id="estado"></p>
-
-  <!-- Cargar librería de Google API -->
-  <script src="https://apis.google.com/js/api.js"></script>
-  <!-- Archivo de JavaScript -->
-  <script src="script.js"></script>
 </body>
 
 </html>
