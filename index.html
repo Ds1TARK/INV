@@ -1,27 +1,4 @@
-[9:19 a.m., 9/11/2024] Daniel Aguilera: <!DOCTYPE html>
-<html lang="es">
-
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Inventario de Artículos</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 20px;
-            background-color: #f7f9fc;
-            color: #333;
-        }
-
-        .header-background {
-            background-image: url('/mnt/data/as.jpg');
-            background-size: cover;
-            background-position: center;
-            height: 200px;
-            disp…
-[9:35 a.m., 9/11/2024] Daniel Aguilera: <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 
 <head>
@@ -108,7 +85,7 @@
         }
 
         .action-buttons button {
-            width: 180px;
+            width: 120px;
         }
 
         .icon {
@@ -132,10 +109,10 @@
         <input type="file" id="excelInput" accept=".xlsx" />
         <button onclick="importExcel()"><i class="fas fa-file-import icon"></i>Importar desde Excel</button>
         <button onclick="exportToExcel()"><i class="fas fa-file-export icon"></i>Exportar a Excel</button>
-        <button onclick="sendToTelegram()"><i class="fas fa-paper-plane icon"></i>Enviar a Telegram</button>
-        <button onclick="sendDataToGoogleSheets()"><i class="fas fa-cloud-upload-alt icon"></i>Enviar a Google Sheets</button>
-        <button onclick="loadGoogleSheetsData()"><i class="fas fa-sync icon"></i>Cargar desde Google Sheets</button>
         <button onclick="clearTable()"><i class="fas fa-trash-alt icon"></i>Limpiar Datos</button>
+        <button onclick="sendToTelegram()"><i class="fas fa-paper-plane icon"></i>Enviar a Telegram</button>
+        <button onclick="loadGoogleSheetsData()"><i class="fas fa-sync icon"></i>Cargar desde Google Sheets</button>
+        <button onclick="sendDataToGoogleSheets()"><i class="fas fa-cloud-upload-alt icon"></i>Enviar a Google Sheets</button>
     </div>
 
     <table>
@@ -147,14 +124,15 @@
                 <th>Cantidad en Físico</th>
             </tr>
         </thead>
-        <tbody id="itemList"></tbody>
+        <tbody id="itemList">
+            <!-- Los artículos se agregarán aquí -->
+        </tbody>
     </table>
 
     <script>
-        const token = '7858773010:AAF3NfqFHkMTz446FjvdynGYxNAgzzQTnZg';
-        const chatId = '5712491335';
-        const apiKey = 'AIzaSyB8jZxcuFvLvf2CjVjVhT6hLRUw3Gk-8jk';
-        const spreadsheetId = '1QVYqsPy559Mo2f-iqImH4wtcW-vDY-pBFeXrOMDh2i0';
+        // Token de tu Bot de Telegram
+        const token = '7858773010:AAF3NfqFHkMTz446FjvdynGYxNAgzzQTnZg'; // Este es tu token
+        const chatId = '5712491335'; // Este es tu chat ID
 
         document.getElementById('itemForm').addEventListener('submit', function (event) {
             event.preventDefault();
@@ -167,6 +145,9 @@
                     addItemToTable(code, name, quantitySystem, quantityPhysical);
                 }
             });
+
+            document.getElementById('itemForm').reset();
+            saveDataToLocalStorage();
         });
 
         function addItemToTable(code, name, quantitySystem, quantityPhysical) {
@@ -174,36 +155,238 @@
             row.innerHTML = `
                 <td>${code}</td>
                 <td>${name}</td>
-                <td><input type="number" value="${quantitySystem}" readonly></td>
-                <td><input type="number" value="${quantityPhysical}"></td>
+                <td><input type="number" value="${quantitySystem}" min="0" readonly></td> <!-- Solo lectura -->
+                <td><input type="number" value="${quantityPhysical}" min="0"></td> <!-- Editable -->
             `;
             document.getElementById('itemList').appendChild(row);
         }
 
-        function sendDataToGoogleSheets() {
-            const range = 'DATA!A:E';
+        function saveDataToLocalStorage() {
             const rows = Array.from(document.querySelectorAll('#itemList tr')).map(row => {
                 const cells = row.querySelectorAll('td');
+                return {
+                    code: cells[0].textContent,
+                    name: cells[1].textContent,
+                    quantitySystem: cells[2].querySelector('input').value,
+                    quantityPhysical: cells[3].querySelector('input').value
+                };
+            });
+            localStorage.setItem('inventoryData', JSON.stringify(rows));
+        }
+
+        function loadDataFromLocalStorage() {
+            const data = JSON.parse(localStorage.getItem('inventoryData') || '[]');
+            data.forEach(item => {
+                addItemToTable(item.code, item.name, item.quantitySystem, item.quantityPhysical);
+            });
+        }
+
+        function importExcel() {
+            const fileInput = document.getElementById('excelInput');
+            const file = fileInput.files[0];
+
+            if (!file) {
+                alert("Por favor, selecciona un archivo Excel.");
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function (event) {
+                const data = new Uint8Array(event.target.result);
+                const workbook = XLSX.read(data, {type: 'array'});
+
+                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                const json = XLSX.utils.sheet_to_json(firstSheet, {header: 1});
+
+                json.forEach(row => {
+                    if (row.length >= 4) {
+                        const [code, name, quantitySystem, quantityPhysical] = row.map(cell => cell ? cell.toString().trim() : "");
+                        if (code && name && quantitySystem && quantityPhysical) {
+                            addItemToTable(code, name, quantitySystem, quantityPhysical);
+                        }
+                    }
+                });
+                saveDataToLocalStorage();
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        function exportToExcel() {
+            const rows = Array.from(document.querySelectorAll('#itemList tr')).map(row => {
+                const cells = row.querySelectorAll('td');
+                const quantitySystem = cells[2].querySelector('input').value;
+                const quantityPhysical = cells[3].querySelector('input').value;
+                const difference = quantityPhysical - quantitySystem; // Calculamos la diferencia
                 return [
                     cells[0].textContent,
                     cells[1].textContent,
-                    cells[2].querySelector('input').value,
-                    cells[3].querySelector('input').value,
-                    cells[3].querySelector('input').value - cells[2].querySelector('input').value
+                    quantitySystem,
+                    quantityPhysical,
+                    difference // Agregamos la diferencia
                 ];
             });
 
-            const body = { values: [["Código", "Artículo", "Cantidad Sistema", "Cantidad Físico", "Diferencia"], ...rows] };
+            const worksheet = XLSX.utils.aoa_to_sheet([["Código", "Artículo", "Cantidad en Sistema", "Cantidad en Físico", "Diferencia"], ...rows]);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Inventario");
 
-            fetch(https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${range}:append?valueInputOption=USER_ENTERED&key=${apiKey}, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(body)
-            }).then(res => alert("Datos enviados correctamente a Google Sheets"))
-              .catch(err => alert("Error: " + err));
+            const excelFile = XLSX.write(workbook, { bookType: "xlsx", type: "binary" });
+
+            const blob = new Blob([s2ab(excelFile)], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+            const fileName = 'inventario_articulos.xlsx';
+
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = fileName;
+            link.click();
         }
 
-        window.onload = () => localStorage.getItem('inventoryData') && JSON.parse(localStorage.getItem('inventoryData')).forEach(item => addItemToTable(item.code, item.name, item.quantitySystem, item.quantityPhysical));
+        function s2ab(s) {
+            const buf = new ArrayBuffer(s.length);
+            const view = new Uint8Array(buf);
+            for (let i = 0; i < s.length; i++) {
+                view[i] = s.charCodeAt(i) & 0xFF;
+            }
+            return buf;
+        }
+
+        function sendToTelegram() {
+            const rows = Array.from(document.querySelectorAll('#itemList tr')).map(row => {
+                const cells = row.querySelectorAll('td');
+                const quantitySystem = cells[2].querySelector('input').value;
+                const quantityPhysical = cells[3].querySelector('input').value;
+                const difference = quantityPhysical - quantitySystem; // Calculamos la diferencia
+                return {
+                    code: cells[0].textContent,
+                    name: cells[1].textContent,
+                    quantitySystem: quantitySystem,
+                    quantityPhysical: quantityPhysical,
+                    difference: difference
+                };
+            });
+
+            const rowsExcel = rows.map(item => [
+                item.code,
+                item.name,
+                item.quantitySystem,
+                item.quantityPhysical,
+                item.difference // Incluimos la diferencia
+            ]);
+
+            const worksheet = XLSX.utils.aoa_to_sheet([["Código", "Artículo", "Cantidad en Sistema", "Cantidad en Físico", "Diferencia"], ...rowsExcel]);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Inventario");
+
+            const excelFile = XLSX.write(workbook, { bookType: "xlsx", type: "binary" });
+            const blob = new Blob([s2ab(excelFile)], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+
+            const formData = new FormData();
+            formData.append("file", blob, "inventario_articulos.xlsx");
+
+            const telegramUrl = https://api.telegram.org/bot${token}/sendDocument;
+            formData.append("chat_id", chatId);
+            formData.append("document", blob, "inventario_articulos.xlsx");
+
+            fetch(telegramUrl, {
+                method: "POST",
+                body: formData
+            })
+            .then(response => response.json())
+            .then(result => {
+                alert("Archivo enviado a Telegram");
+            })
+            .catch(error => {
+                alert("Error al enviar el archivo a Telegram: " + error);
+            });
+        }
+
+        function clearTable() {
+            document.getElementById('itemList').innerHTML = '';
+            localStorage.removeItem('inventoryData');
+        }
+
+        async function sendDataToGoogleSheets() {
+    const apiKey = 'AIzaSyB8jZxcuFvLvf2CjVjVhT6hLRUw3Gk-8jk';
+    const spreadsheetId = '1QVYqsPy559Mo2f-iqImH4wtcW-vDY-pBFeXrOMDh2i0';
+    const range = 'DATA!A:E'; // Hoja y rango donde se enviarán los datos
+
+    const rows = Array.from(document.querySelectorAll('#itemList tr')).map(row => {
+        const cells = row.querySelectorAll('td');
+        const code = cells[0].textContent;
+        const name = cells[1].textContent;
+        const quantitySystem = cells[2].querySelector('input').value;
+        const quantityPhysical = cells[3].querySelector('input').value;
+        const difference = quantityPhysical - quantitySystem; // Calculamos la diferencia
+        return [code, name, quantitySystem, quantityPhysical, difference];
+    });
+
+    // Estructura del cuerpo de la petición
+    const body = {
+        "range": range,
+        "majorDimension": "ROWS",
+        "values": [
+            ["Código", "Artículo", "Cantidad en Sistema", "Cantidad en Físico", "Diferencia"],
+            ...rows
+        ]
+    };
+
+    const url = https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${range}:append?valueInputOption=USER_ENTERED&key=${apiKey};
+
+    try {
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(body)
+        });
+
+        const result = await response.json();
+
+        if (result.updates) {
+            alert("Datos enviados correctamente a Google Sheets.");
+        } else {
+            alert(Error al enviar datos: ${result.error.message});
+        }
+    } catch (error) {
+        console.error('Error al enviar datos a Google Sheets:', error);
+        alert('Hubo un error al intentar enviar los datos a Google Sheets.');
+    }
+}
+        async function loadGoogleSheetsData() {
+            const apiKey = 'AIzaSyB8jZxcuFvLvf2CjVjVhT6hLRUw3Gk-8jk'; // Tu API Key
+            const spreadsheetId = '1QVYqsPy559Mo2f-iqImH4wtcW-vDY-pBFeXrOMDh2i0'; // ID de la hoja de cálculo
+            const range = 'B1PB!A:D'; // Nombre de la hoja actualizado
+
+            const url = https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${range}?key=${apiKey};
+            try {
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                console.log(data); // Imprime la respuesta para verificar
+
+                if (data.values) {
+                    // Limpiar la tabla antes de cargar nuevos datos
+                    document.getElementById('itemList').innerHTML = '';
+
+                    // Agregar los datos de Google Sheets a la tabla
+                    data.values.forEach(row => {
+                        const [code, name, quantitySystem, quantityPhysical] = row.map(cell => cell.trim());
+                        if (code && name && quantitySystem && quantityPhysical) {
+                            addItemToTable(code, name, quantitySystem, quantityPhysical);
+                        }
+                    });
+                } else {
+                    alert('No se pudieron cargar los datos de Google Sheets.');
+                }
+            } catch (error) {
+                console.error('Error al cargar datos de Google Sheets:', error);
+                alert('Hubo un error al intentar cargar los datos desde Google Sheets.');
+            }
+        }
+
+        window.onload = loadDataFromLocalStorage;
     </script>
 </body>
+
 </html>
