@@ -114,6 +114,13 @@
         <button onclick="loadGoogleSheetsData()"><i class="fas fa-sync icon"></i>Cargar desde Google Sheets</button>
     </div>
 
+    <!-- Campo de búsqueda -->
+    <div>
+        <label for="searchInput">Buscar por Código o Nombre:</label>
+        <input type="text" id="searchInput" placeholder="Ingrese código o nombre..." onkeyup="searchItem()">
+        <button onclick="clearSearch()">Limpiar Búsqueda</button>
+    </div>
+
     <table>
         <thead>
             <tr>
@@ -121,6 +128,7 @@
                 <th>Artículo</th>
                 <th>Cantidad en Sistema</th>
                 <th>Cantidad en Físico</th>
+                <th>Acciones</th>
             </tr>
         </thead>
         <tbody id="itemList">
@@ -156,6 +164,7 @@
                 <td>${name}</td>
                 <td><input type="number" value="${quantitySystem}" min="0" readonly></td> <!-- Solo lectura -->
                 <td><input type="number" value="${quantityPhysical}" min="0"></td> <!-- Editable -->
+                <td><button onclick="editItem(this)">Editar</button></td>
             `;
             document.getElementById('itemList').appendChild(row);
         }
@@ -179,6 +188,46 @@
                 data.forEach(item => {
                     addItemToTable(item.code, item.name, item.quantitySystem, item.quantityPhysical);
                 });
+            }
+        }
+
+        // Búsqueda de artículos
+        function searchItem() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const rows = document.querySelectorAll('#itemList tr');
+            rows.forEach(row => {
+                const cells = row.querySelectorAll('td');
+                const code = cells[0].textContent.toLowerCase();
+                const name = cells[1].textContent.toLowerCase();
+                if (code.includes(searchTerm) || name.includes(searchTerm)) {
+                    row.style.display = ''; // Mostrar fila
+                } else {
+                    row.style.display = 'none'; // Ocultar fila
+                }
+            });
+        }
+
+        // Limpiar la búsqueda
+        function clearSearch() {
+            document.getElementById('searchInput').value = '';
+            const rows = document.querySelectorAll('#itemList tr');
+            rows.forEach(row => row.style.display = ''); // Mostrar todas las filas
+        }
+
+        // Función para editar artículo
+        function editItem(button) {
+            const row = button.closest('tr');
+            const cells = row.querySelectorAll('td');
+            const code = cells[0].textContent;
+            const name = cells[1].textContent;
+            const quantitySystem = cells[2].querySelector('input').value;
+            const quantityPhysical = cells[3].querySelector('input').value;
+
+            // Pedir nuevo valor para cantidad física
+            const newQuantityPhysical = prompt(`Modificar cantidad física de ${name} (Código: ${code})`, quantityPhysical);
+            if (newQuantityPhysical !== null) {
+                cells[3].querySelector('input').value = newQuantityPhysical;
+                saveDataToLocalStorage(); // Guardar cambios en el localStorage
             }
         }
 
@@ -303,7 +352,6 @@
 
         function clearTable() {
             document.getElementById('itemList').innerHTML = '';  // Limpia la tabla
-            // localStorage.removeItem('inventoryData'); // No eliminar datos de localStorage si quieres que persistan
         }
 
         async function loadGoogleSheetsData() {
@@ -338,9 +386,7 @@
             }
         }
 
-        window.onload = function() {
-            loadDataFromLocalStorage();  // Cargar datos desde localStorage al iniciar
-        }
+        window.onload = loadDataFromLocalStorage;
     </script>
 </body>
 
