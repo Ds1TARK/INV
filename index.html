@@ -112,7 +112,6 @@
         <button onclick="clearTable()"><i class="fas fa-trash-alt icon"></i>Limpiar Datos</button>
         <button onclick="sendToTelegram()"><i class="fas fa-paper-plane icon"></i>Enviar a Telegram</button>
         <button onclick="loadGoogleSheetsData()"><i class="fas fa-sync icon"></i>Cargar desde Google Sheets</button>
-        <button onclick="sendDataToGoogleSheets()"><i class="fas fa-cloud-upload-alt icon"></i>Enviar a Google Sheets</button>
     </div>
 
     <table>
@@ -131,8 +130,8 @@
 
     <script>
         // Token de tu Bot de Telegram
-        const token = '7858773010:AAF3NfqFHkMTz446FjvdynGYxNAgzzQTnZg'; // Este es tu token
-        const chatId = '5712491335'; // Este es tu chat ID
+        const token = '7452231588:AAF5hJ-Z8snzRVD78kflm2Rf2ONd8n3OMiI'; // Este es tu token
+        const chatId = '7928736550'; // Este es tu chat ID
 
         document.getElementById('itemForm').addEventListener('submit', function (event) {
             event.preventDefault();
@@ -283,7 +282,7 @@
             const formData = new FormData();
             formData.append("file", blob, "inventario_articulos.xlsx");
 
-            const telegramUrl = https://api.telegram.org/bot${token}/sendDocument;
+            const telegramUrl = `https://api.telegram.org/bot${token}/sendDocument`;
             formData.append("chat_id", chatId);
             formData.append("document", blob, "inventario_articulos.xlsx");
 
@@ -305,60 +304,12 @@
             localStorage.removeItem('inventoryData');
         }
 
-        async function sendDataToGoogleSheets() {
-    const apiKey = 'AIzaSyB8jZxcuFvLvf2CjVjVhT6hLRUw3Gk-8jk';
-    const spreadsheetId = '1QVYqsPy559Mo2f-iqImH4wtcW-vDY-pBFeXrOMDh2i0';
-    const range = 'DATA!A:E'; // Hoja y rango donde se enviarán los datos
-
-    const rows = Array.from(document.querySelectorAll('#itemList tr')).map(row => {
-        const cells = row.querySelectorAll('td');
-        const code = cells[0].textContent;
-        const name = cells[1].textContent;
-        const quantitySystem = cells[2].querySelector('input').value;
-        const quantityPhysical = cells[3].querySelector('input').value;
-        const difference = quantityPhysical - quantitySystem; // Calculamos la diferencia
-        return [code, name, quantitySystem, quantityPhysical, difference];
-    });
-
-    // Estructura del cuerpo de la petición
-    const body = {
-        "range": range,
-        "majorDimension": "ROWS",
-        "values": [
-            ["Código", "Artículo", "Cantidad en Sistema", "Cantidad en Físico", "Diferencia"],
-            ...rows
-        ]
-    };
-
-    const url = https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${range}:append?valueInputOption=USER_ENTERED&key=${apiKey};
-
-    try {
-        const response = await fetch(url, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(body)
-        });
-
-        const result = await response.json();
-
-        if (result.updates) {
-            alert("Datos enviados correctamente a Google Sheets.");
-        } else {
-            alert(Error al enviar datos: ${result.error.message});
-        }
-    } catch (error) {
-        console.error('Error al enviar datos a Google Sheets:', error);
-        alert('Hubo un error al intentar enviar los datos a Google Sheets.');
-    }
-}
         async function loadGoogleSheetsData() {
             const apiKey = 'AIzaSyB8jZxcuFvLvf2CjVjVhT6hLRUw3Gk-8jk'; // Tu API Key
             const spreadsheetId = '1QVYqsPy559Mo2f-iqImH4wtcW-vDY-pBFeXrOMDh2i0'; // ID de la hoja de cálculo
-            const range = 'B1PB!A:D'; // Nombre de la hoja actualizado
+            const range = 'B1PA!A:D'; // Nombre de la hoja actualizado
 
-            const url = https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${range}?key=${apiKey};
+            const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${range}?key=${apiKey}`;
             try {
                 const response = await fetch(url);
                 const data = await response.json();
