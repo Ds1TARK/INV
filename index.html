@@ -43,7 +43,7 @@
             border-radius: 8px;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
             overflow: hidden;
-            table-layout: auto; /* Permite que las columnas se ajusten dinámicamente */
+            table-layout: auto;
         }
 
         th,
@@ -51,12 +51,21 @@
             border: 1px solid #ddd;
             padding: 12px;
             text-align: left;
-            word-wrap: break-word; /* Permite que el contenido largo se ajuste correctamente */
+            word-wrap: break-word;
+            vertical-align: top; /* Asegura que el contenido se alinee en la parte superior de la celda */
         }
 
         th {
             background-color: #0056b3;
             color: white;
+        }
+
+        td:nth-child(2) {
+            max-width: 200px; /* Limitar el ancho máximo de la columna de Artículo */
+            word-wrap: break-word; /* Permite que el texto largo se divida en varias líneas */
+            white-space: normal; /* Asegura que se respete el ajuste de línea */
+            height: 60px; /* Limitar la altura de la celda */
+            overflow: hidden; /* Evita que el contenido desborde la celda */
         }
 
         input[type="number"],
@@ -236,22 +245,22 @@
         }
 
         function loadDataFromLocalStorage() {
-            const data = JSON.parse(localStorage.getItem('inventoryData') || '[]');
-            if (data.length > 0) {
-                data.forEach(item => {
+            const savedData = JSON.parse(localStorage.getItem('inventoryData'));
+            if (savedData) {
+                savedData.forEach(item => {
                     addItemToTable(item.code, item.name, item.quantitySystem, item.quantityPhysical);
                 });
             }
         }
 
         function searchItem() {
-            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const searchValue = document.getElementById('searchInput').value.toLowerCase();
             const rows = document.querySelectorAll('#itemList tr');
             rows.forEach(row => {
                 const cells = row.querySelectorAll('td');
                 const code = cells[0].textContent.toLowerCase();
                 const name = cells[1].textContent.toLowerCase();
-                if (code.includes(searchTerm) || name.includes(searchTerm)) {
+                if (code.includes(searchValue) || name.includes(searchValue)) {
                     row.style.display = ''; // Mostrar fila
                 } else {
                     row.style.display = 'none'; // Ocultar fila
