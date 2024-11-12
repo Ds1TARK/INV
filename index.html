@@ -56,7 +56,7 @@
             color: white;
         }
 
-        input[type="number"], input[type="text"] {
+        input[type="number"] {
             width: 100%;
             background-color: #e9f5ff;
             color: #333;
@@ -143,22 +143,6 @@
         <h1>Gestión de Artículos</h1>
     </div>
 
-    <div>
-        <label for="codeInput">Código:</label>
-        <input type="text" id="codeInput" placeholder="Ingrese código">
-
-        <label for="nameInput">Artículo:</label>
-        <input type="text" id="nameInput" placeholder="Ingrese artículo">
-
-        <label for="systemQuantityInput">Cantidad en Sistema:</label>
-        <input type="number" id="systemQuantityInput" placeholder="Cantidad en sistema">
-
-        <label for="physicalQuantityInput">Cantidad en Físico:</label>
-        <input type="number" id="physicalQuantityInput" placeholder="Cantidad en físico">
-
-        <button onclick="addItem()">Agregar Artículo</button>
-    </div>
-
     <div class="action-buttons">
         <input type="file" id="excelInput" accept=".xlsx" />
         <button onclick="importExcel()"><i class="fas fa-file-import icon"></i>Importar desde Excel</button>
@@ -195,31 +179,14 @@
         const token = '7452231588:AAF5hJ-Z8snzRVD78kflm2Rf2ONd8n3OMiI';
         const chatId = '7928736550';
 
-        function addItem() {
-            const code = document.getElementById('codeInput').value.trim();
-            const name = document.getElementById('nameInput').value.trim();
-            const quantitySystem = document.getElementById('systemQuantityInput').value.trim();
-            const quantityPhysical = document.getElementById('physicalQuantityInput').value.trim();
-
-            if (code && name && quantitySystem && quantityPhysical) {
-                const row = document.createElement('tr');
-                row.innerHTML = 
-                    `<td>${code}</td>
-                    <td>${name}</td>
-                    <td><input type="number" value="${quantitySystem}" min="0" readonly></td>
-                    <td><input type="number" value="${quantityPhysical}" min="0"></td>`;
-                document.getElementById('itemList').appendChild(row);
-
-                saveDataToLocalStorage();
-
-                // Limpiar los campos después de agregar
-                document.getElementById('codeInput').value = '';
-                document.getElementById('nameInput').value = '';
-                document.getElementById('systemQuantityInput').value = '';
-                document.getElementById('physicalQuantityInput').value = '';
-            } else {
-                alert("Por favor, complete todos los campos.");
-            }
+        function addItemToTable(code, name, quantitySystem, quantityPhysical) {
+            const row = document.createElement('tr');
+            row.innerHTML = 
+                `<td>${code}</td>
+                 <td>${name}</td>
+                 <td><input type="number" value="${quantitySystem}" min="0" readonly></td>
+                 <td><input type="number" value="${quantityPhysical}" min="0"></td>`;
+            document.getElementById('itemList').appendChild(row);
         }
 
         function saveDataToLocalStorage() {
@@ -271,9 +238,160 @@
             }
         }
 
+        function confirmLoadGoogleSheetsData() {
+            if (confirm("¿Estás seguro de que deseas cargar los datos desde Google Sheets?")) {
+                loadGoogleSheetsData();
+            }
+        }
+
+        function importExcel() {
+            const fileInput = document.getElementById('excelInput');
+            const file = fileInput.files[0];
+
+            if (!file) {
+                alert("Por favor, selecciona un archivo Excel.");
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function (event) {
+                const data = new Uint8Array(event.target.result);
+                const workbook = XLSX.read(data, {type: 'array'});
+
+                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                const json = XLSX.utils.sheet_to_json(firstSheet, {header: 1});
+
+                json.forEach(row => {
+                    if (row.length >= 4) {
+                        const [code, name, quantitySystem, quantityPhysical] = row.map(cell => cell ? cell.toString().trim() : "");
+                        if (code && name && quantitySystem && quantityPhysical) {
+                            addItemToTable(code, name, quantitySystem, quantityPhysical);
+                        }
+                    }
+                });
+                saveDataToLocalStorage();
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        function exportToExcel() {
+            const rows = Array.from(document.querySelectorAll('#itemList tr')).map(row => {
+                const cells = row.querySelectorAll('td');
+                const quantitySystem = cells[2].querySelector('input').value;
+                const quantityPhysical = cells[3].querySelector('input').value;
+                const difference = quantityPhysical - quantitySystem;
+                return [
+                    cells[0].textContent,
+                    cells[1].textContent,
+                    quantitySystem,
+                    quantityPhysical,
+                    difference
+                ];
+            });
+
+            const worksheet = XLSX.utils.aoa_to_sheet([["Código", "Artículo", "Cantidad en Sistema", "Cantidad en Físico", "Diferencia"], ...rows]);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Inventario");
+
+            const excelFile = XLSX.write(workbook, { bookType: "xlsx", type: "binary" });
+
+            const blob = new Blob([s2ab(excelFile)], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+            const fileName = 'inventario_articulos.xlsx';
+
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = fileName;
+            link.click();
+        }
+
+        function s2ab(s) {
+            const buf = new ArrayBuffer(s.length);
+            const view = new Uint8Array(buf);
+            for (let i = 0; i < s.length; i++) {
+                view[i] = s.charCodeAt(i) & 0xFF;
+            }
+            return buf;
+        }
+
+        function sendToTelegram() {
+            const rows = Array.from(document.querySelectorAll('#itemList tr')).map(row => {
+                const cells = row.querySelectorAll('td');
+                const quantitySystem = cells[2].querySelector('input').value;
+                const quantityPhysical = cells[3].querySelector('input').value;
+                const difference = quantityPhysical - quantitySystem;
+                return {
+                    code: cells[0].textContent,
+                    name: cells[1].textContent,
+                    quantitySystem: quantitySystem,
+                    quantityPhysical: quantityPhysical,
+                    difference: difference
+                };
+            });
+
+            const rowsExcel = rows.map(item => [
+                item.code,
+                item.name,
+                item.quantitySystem,
+                item.quantityPhysical,
+                item.difference
+            ]);
+
+            const worksheet = XLSX.utils.aoa_to_sheet([["Código", "Artículo", "Cantidad en Sistema", "Cantidad en Físico", "Diferencia"], ...rowsExcel]);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Inventario");
+
+            const excelFile = XLSX.write(workbook, { bookType: "xlsx", type: "binary" });
+            const blob = new Blob([s2ab(excelFile)], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+
+            const formData = new FormData();
+            formData.append("file", blob, "inventario_articulos.xlsx");
+
+            const telegramUrl = `https://api.telegram.org/bot${token}/sendDocument`;
+            formData.append("chat_id", chatId);
+            formData.append("document", blob, "inventario_articulos.xlsx");
+
+            fetch(telegramUrl, {
+                method: "POST",
+                body: formData
+            })
+            .then(response => response.json())
+            .then(result => {
+                alert("Archivo enviado a Telegram");
+            })
+            .catch(error => {
+                alert("Error al enviar el archivo a Telegram: " + error);
+            });
+        }
+
         function clearTable() {
             document.getElementById('itemList').innerHTML = '';
-            saveDataToLocalStorage();
+        }
+
+        async function loadGoogleSheetsData() {
+            const apiKey = 'AIzaSyB8jZxcuFvLvf2CjVjVhT6hLRUw3Gk-8jk'; // Tu API Key
+            const spreadsheetId = '1QVYqsPy559Mo2f-iqImH4wtcW-vDY-pBFeXrOMDh2i0'; // ID de la hoja de cálculo
+            const range = 'B1PA!A:D'; // Nombre de la hoja actualizado
+
+            const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${range}?key=${apiKey}`;
+            try {
+                const response = await fetch(url);
+                const data = await response.json();
+
+                if (data.values) {
+                    document.getElementById('itemList').innerHTML = '';
+                    data.values.forEach(row => {
+                        const [code, name, quantitySystem, quantityPhysical] = row.map(cell => cell.trim());
+                        if (code && name && quantitySystem && quantityPhysical) {
+                            addItemToTable(code, name, quantitySystem, quantityPhysical);
+                        }
+                    });
+                } else {
+                    alert('No se pudieron cargar los datos de Google Sheets.');
+                }
+            } catch (error) {
+                console.error('Error al cargar datos de Google Sheets:', error);
+                alert('Hubo un error al intentar cargar los datos desde Google Sheets.');
+            }
         }
 
         window.onload = loadDataFromLocalStorage;
