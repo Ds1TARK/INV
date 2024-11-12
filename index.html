@@ -128,7 +128,6 @@
                 <th>Artículo</th>
                 <th>Cantidad en Sistema</th>
                 <th>Cantidad en Físico</th>
-                <th>Acciones</th>
             </tr>
         </thead>
         <tbody id="itemList">
@@ -164,7 +163,6 @@
                 <td>${name}</td>
                 <td><input type="number" value="${quantitySystem}" min="0" readonly></td> <!-- Solo lectura -->
                 <td><input type="number" value="${quantityPhysical}" min="0"></td> <!-- Editable -->
-                <td><button onclick="editItem(this)">Editar</button></td>
             `;
             document.getElementById('itemList').appendChild(row);
         }
@@ -212,23 +210,6 @@
             document.getElementById('searchInput').value = '';
             const rows = document.querySelectorAll('#itemList tr');
             rows.forEach(row => row.style.display = ''); // Mostrar todas las filas
-        }
-
-        // Función para editar artículo
-        function editItem(button) {
-            const row = button.closest('tr');
-            const cells = row.querySelectorAll('td');
-            const code = cells[0].textContent;
-            const name = cells[1].textContent;
-            const quantitySystem = cells[2].querySelector('input').value;
-            const quantityPhysical = cells[3].querySelector('input').value;
-
-            // Pedir nuevo valor para cantidad física
-            const newQuantityPhysical = prompt(`Modificar cantidad física de ${name} (Código: ${code})`, quantityPhysical);
-            if (newQuantityPhysical !== null) {
-                cells[3].querySelector('input').value = newQuantityPhysical;
-                saveDataToLocalStorage(); // Guardar cambios en el localStorage
-            }
         }
 
         function importExcel() {
