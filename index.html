@@ -175,9 +175,11 @@
 
         function loadDataFromLocalStorage() {
             const data = JSON.parse(localStorage.getItem('inventoryData') || '[]');
-            data.forEach(item => {
-                addItemToTable(item.code, item.name, item.quantitySystem, item.quantityPhysical);
-            });
+            if (data.length > 0) {
+                data.forEach(item => {
+                    addItemToTable(item.code, item.name, item.quantitySystem, item.quantityPhysical);
+                });
+            }
         }
 
         function importExcel() {
@@ -300,8 +302,8 @@
         }
 
         function clearTable() {
-            document.getElementById('itemList').innerHTML = '';
-            localStorage.removeItem('inventoryData');
+            document.getElementById('itemList').innerHTML = '';  // Limpia la tabla
+            // localStorage.removeItem('inventoryData'); // No eliminar datos de localStorage si quieres que persistan
         }
 
         async function loadGoogleSheetsData() {
@@ -336,7 +338,9 @@
             }
         }
 
-        window.onload = loadDataFromLocalStorage;
+        window.onload = function() {
+            loadDataFromLocalStorage();  // Cargar datos desde localStorage al iniciar
+        }
     </script>
 </body>
 
