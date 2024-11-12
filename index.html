@@ -155,7 +155,7 @@
         <button onclick="exportToExcel()"><i class="fas fa-file-export icon"></i>Exportar a Excel</button>
         <button onclick="clearTable()"><i class="fas fa-trash-alt icon"></i>Limpiar Datos</button>
         <button onclick="sendToTelegram()"><i class="fas fa-paper-plane icon"></i>Enviar a Telegram</button>
-        <button onclick="loadGoogleSheetsData()"><i class="fas fa-sync icon"></i>Cargar desde Google Sheets</button>
+        <button id="loadGoogleSheetsButton" onclick="loadGoogleSheetsData()" disabled><i class="fas fa-sync icon"></i>Cargar desde Google Sheets</button>
     </div>
 
     <div>
@@ -196,6 +196,7 @@
 
             document.getElementById('itemForm').reset();
             saveDataToLocalStorage();
+            enableGoogleSheetsButton(); // Habilitar el botón de Google Sheets al agregar datos
         });
 
         function addItemToTable(code, name, quantitySystem, quantityPhysical) {
@@ -249,13 +250,16 @@
         function clearSearch() {
             document.getElementById('searchInput').value = '';
             const rows = document.querySelectorAll('#itemList tr');
-            rows.forEach(row => row.style.display = ''); // Mostrar todas las filas
+            rows.forEach(row => row.style.display = '');
+        }
+
+        function enableGoogleSheetsButton() {
+            const rows = document.querySelectorAll('#itemList tr');
+            document.getElementById('loadGoogleSheetsButton').disabled = rows.length === 0;
         }
 
         function importExcel() {
-            const fileInput = document.getElementById('excelInput');
-            const file = fileInput.files[0];
-
+            const file = document.getElementById('excelInput').files[0];
             if (!file) {
                 alert("Por favor, selecciona un archivo Excel.");
                 return;
@@ -278,6 +282,7 @@
                     }
                 });
                 saveDataToLocalStorage();
+                enableGoogleSheetsButton(); // Habilitar el botón de Google Sheets al importar datos
             };
             reader.readAsArrayBuffer(file);
         }
@@ -372,10 +377,21 @@
         }
 
         function clearTable() {
-            document.getElementById('itemList').innerHTML = '';
+            if (confirm("¿Estás seguro que deseas limpiar los datos?")) {
+                document.getElementById('itemList').innerHTML = '';
+                localStorage.removeItem('inventoryData');  // Eliminar datos de almacenamiento local
+                enableGoogleSheetsButton();  // Deshabilitar botón de Google Sheets si la tabla está vacía
+            }
         }
 
         async function loadGoogleSheetsData() {
+            // Verificar si hay datos en la tabla antes de permitir cargar desde Google Sheets
+            const rows = document.querySelectorAll('#itemList tr');
+            if (rows.length > 0) {
+                alert("Por favor, limpia los datos antes de cargar desde Google Sheets.");
+                return;
+            }
+
             const apiKey = 'AIzaSyB8jZxcuFvLvf2CjVjVhT6hLRUw3Gk-8jk'; // Tu API Key
             const spreadsheetId = '1QVYqsPy559Mo2f-iqImH4wtcW-vDY-pBFeXrOMDh2i0'; // ID de la hoja de cálculo
             const range = 'B1PA!A:D'; // Nombre de la hoja actualizado
