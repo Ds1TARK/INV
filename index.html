@@ -6,7 +6,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Inventario de Artículos</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
-    <script src="https://apis.google.com/js/api.js"></script> <!-- Agregado para cargar la API de Google -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <style>
         body {
@@ -113,7 +112,6 @@
         <button onclick="clearTable()"><i class="fas fa-trash-alt icon"></i>Limpiar Datos</button>
         <button onclick="sendToTelegram()"><i class="fas fa-paper-plane icon"></i>Enviar a Telegram</button>
         <button onclick="loadGoogleSheetsData()"><i class="fas fa-sync icon"></i>Cargar desde Google Sheets</button>
-        <button onclick="sendToGoogleSheets()"><i class="fas fa-cloud-upload-alt icon"></i>Enviar a Google Sheets</button>
     </div>
 
     <!-- Campo de búsqueda -->
@@ -142,89 +140,6 @@
         const token = '7452231588:AAF5hJ-Z8snzRVD78kflm2Rf2ONd8n3OMiI'; // Este es tu token
         const chatId = '7928736550'; // Este es tu chat ID
 
-        // Google Sheets API
-        const CLIENT_ID = '682688471989-i42vr76t42di5921iarapiklosldo7b7.apps.googleusercontent.com'; // Reemplaza con tu Client ID
-        const API_KEY = 'AIzaSyB8jZxcuFvLvf2CjVjVhT6hLRUw3Gk-8jk'; // Reemplaza con tu API Key
-        const SPREADSHEET_ID = '1QVYqsPy559Mo2f-iqImH4wtcW-vDY-pBFeXrOMDh2i0'; // Reemplaza con el ID de tu hoja de cálculo
-
-        // Inicializar la API de Google
-        function initGoogleAPI() {
-            gapi.client.init({
-                apiKey: API_KEY,
-                clientId: CLIENT_ID,
-                discoveryDocs: ["https://sheets.googleapis.com/$discovery/rest?version=v4"],
-                scope: "https://www.googleapis.com/auth/spreadsheets"
-            }).then(() => {
-                gapi.auth2.getAuthInstance().isSignedIn.listen(updateSignInStatus);
-                updateSignInStatus(gapi.auth2.getAuthInstance().isSignedIn.get());
-            });
-        }
-
-        // Función que actualiza el estado de autenticación
-        function updateSignInStatus(isSignedIn) {
-            if (isSignedIn) {
-                console.log("Autenticado correctamente");
-            } else {
-                console.log("No autenticado");
-            }
-        }
-
-        // Función para autenticar al usuario
-        function handleAuthClick() {
-            gapi.auth2.getAuthInstance().signIn();
-        }
-
-        // Función para enviar los datos a Google Sheets
-        function sendToGoogleSheets() {
-            const data = gatherInventoryData();  // Recoger los datos de la tabla
-            const range = 'DATAB1PA!A2:D'; // Rango de la hoja DATAB1PA
-
-            const values = data; // Los datos que se van a enviar
-
-            const body = {
-                values: values
-            };
-
-            const request = gapi.client.sheets.spreadsheets.values.update({
-                spreadsheetId: SPREADSHEET_ID,
-                range: range,
-                valueInputOption: 'RAW',
-                resource: body
-            });
-
-            request.then((response) => {
-                console.log(response);
-                alert("Datos enviados a la hoja DATAB1PA de Google Sheets");
-            }, (error) => {
-                console.error(error);
-                alert("Error al enviar los datos a Google Sheets");
-            });
-        }
-
-        // Recoger los datos de la tabla de inventario
-        function gatherInventoryData() {
-            const rows = Array.from(document.querySelectorAll('#itemList tr')).map(row => {
-                const cells = row.querySelectorAll('td');
-                return [
-                    cells[0].textContent,
-                    cells[1].textContent,
-                    cells[2].querySelector('input').value,
-                    cells[3].querySelector('input').value
-                ];
-            });
-            return rows;
-        }
-
-        // Cargar la API de Google
-        function loadGoogleAPI() {
-            gapi.load('client:auth2', initGoogleAPI);
-        }
-
-        // Cargar la API cuando la página se haya cargado
-        window.onload = function () {
-            loadGoogleAPI();
-        };
-
         document.getElementById('itemForm').addEventListener('submit', function (event) {
             event.preventDefault();
             const itemInput = document.getElementById('itemInput').value;
@@ -246,8 +161,8 @@
             row.innerHTML = `
                 <td>${code}</td>
                 <td>${name}</td>
-                <td><input type="number" value="${quantitySystem}" /></td>
-                <td><input type="number" value="${quantityPhysical}" /></td>
+                <td><input type="number" value="${quantitySystem}" min="0" readonly></td> <!-- Solo lectura -->
+                <td><input type="number" value="${quantityPhysical}" min="0"></td> <!-- Editable -->
             `;
             document.getElementById('itemList').appendChild(row);
         }
@@ -255,99 +170,204 @@
         function saveDataToLocalStorage() {
             const rows = Array.from(document.querySelectorAll('#itemList tr')).map(row => {
                 const cells = row.querySelectorAll('td');
-                return [
-                    cells[0].textContent,
-                    cells[1].textContent,
-                    cells[2].querySelector('input').value,
-                    cells[3].querySelector('input').value
-                ];
+                return {
+                    code: cells[0].textContent,
+                    name: cells[1].textContent,
+                    quantitySystem: cells[2].querySelector('input').value,
+                    quantityPhysical: cells[3].querySelector('input').value
+                };
             });
             localStorage.setItem('inventoryData', JSON.stringify(rows));
         }
 
         function loadDataFromLocalStorage() {
-            const savedData = localStorage.getItem('inventoryData');
-            if (savedData) {
-                const items = JSON.parse(savedData);
-                items.forEach(item => {
-                    addItemToTable(item[0], item[1], item[2], item[3]);
+            const data = JSON.parse(localStorage.getItem('inventoryData') || '[]');
+            if (data.length > 0) {
+                data.forEach(item => {
+                    addItemToTable(item.code, item.name, item.quantitySystem, item.quantityPhysical);
                 });
             }
         }
 
-        // Función de búsqueda
+        // Búsqueda de artículos
         function searchItem() {
-            const input = document.getElementById("searchInput").value.toLowerCase();
-            const rows = document.querySelectorAll("#itemList tr");
-
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const rows = document.querySelectorAll('#itemList tr');
             rows.forEach(row => {
-                const cells = row.getElementsByTagName("td");
+                const cells = row.querySelectorAll('td');
                 const code = cells[0].textContent.toLowerCase();
                 const name = cells[1].textContent.toLowerCase();
-
-                if (code.includes(input) || name.includes(input)) {
-                    row.style.display = "";
+                if (code.includes(searchTerm) || name.includes(searchTerm)) {
+                    row.style.display = ''; // Mostrar fila
                 } else {
-                    row.style.display = "none";
+                    row.style.display = 'none'; // Ocultar fila
                 }
             });
         }
 
+        // Limpiar la búsqueda
         function clearSearch() {
-            document.getElementById("searchInput").value = "";
-            searchItem();
+            document.getElementById('searchInput').value = '';
+            const rows = document.querySelectorAll('#itemList tr');
+            rows.forEach(row => row.style.display = ''); // Mostrar todas las filas
         }
 
-        // Limpiar tabla
-        function clearTable() {
-            document.getElementById('itemList').innerHTML = '';
-            localStorage.removeItem('inventoryData');
-        }
-
-        // Función para importar desde Excel
         function importExcel() {
             const fileInput = document.getElementById('excelInput');
             const file = fileInput.files[0];
 
+            if (!file) {
+                alert("Por favor, selecciona un archivo Excel.");
+                return;
+            }
+
             const reader = new FileReader();
-            reader.onload = function (e) {
-                const data = new Uint8Array(e.target.result);
-                const workbook = XLSX.read(data, { type: 'array' });
+            reader.onload = function (event) {
+                const data = new Uint8Array(event.target.result);
+                const workbook = XLSX.read(data, {type: 'array'});
 
-                workbook.SheetNames.forEach(sheetName => {
-                    const sheet = workbook.Sheets[sheetName];
-                    const json = XLSX.utils.sheet_to_json(sheet);
-                    json.forEach(item => {
-                        addItemToTable(item.Código, item.Artículo, item['Cantidad en Sistema'], item['Cantidad en Físico']);
-                    });
+                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                const json = XLSX.utils.sheet_to_json(firstSheet, {header: 1});
+
+                json.forEach(row => {
+                    if (row.length >= 4) {
+                        const [code, name, quantitySystem, quantityPhysical] = row.map(cell => cell ? cell.toString().trim() : "");
+                        if (code && name && quantitySystem && quantityPhysical) {
+                            addItemToTable(code, name, quantitySystem, quantityPhysical);
+                        }
+                    }
                 });
+                saveDataToLocalStorage();
             };
-
             reader.readAsArrayBuffer(file);
         }
 
-        // Exportar a Excel
         function exportToExcel() {
-            const wb = XLSX.utils.book_new();
-            const ws = XLSX.utils.table_to_sheet(document.querySelector('table'));
+            const rows = Array.from(document.querySelectorAll('#itemList tr')).map(row => {
+                const cells = row.querySelectorAll('td');
+                const quantitySystem = cells[2].querySelector('input').value;
+                const quantityPhysical = cells[3].querySelector('input').value;
+                const difference = quantityPhysical - quantitySystem; // Calculamos la diferencia
+                return [
+                    cells[0].textContent,
+                    cells[1].textContent,
+                    quantitySystem,
+                    quantityPhysical,
+                    difference // Agregamos la diferencia
+                ];
+            });
 
-            XLSX.utils.book_append_sheet(wb, ws, 'Inventario');
-            XLSX.writeFile(wb, 'inventario.xlsx');
+            const worksheet = XLSX.utils.aoa_to_sheet([["Código", "Artículo", "Cantidad en Sistema", "Cantidad en Físico", "Diferencia"], ...rows]);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Inventario");
+
+            const excelFile = XLSX.write(workbook, { bookType: "xlsx", type: "binary" });
+
+            const blob = new Blob([s2ab(excelFile)], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+            const fileName = 'inventario_articulos.xlsx';
+
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = fileName;
+            link.click();
         }
 
-        // Función para enviar los datos a Telegram
+        function s2ab(s) {
+            const buf = new ArrayBuffer(s.length);
+            const view = new Uint8Array(buf);
+            for (let i = 0; i < s.length; i++) {
+                view[i] = s.charCodeAt(i) & 0xFF;
+            }
+            return buf;
+        }
+
         function sendToTelegram() {
-            const message = gatherInventoryData().map(item => 
-                `Código: ${item[0]}, Artículo: ${item[1]}, Cantidad en Sistema: ${item[2]}, Cantidad en Físico: ${item[3]}`
-            ).join('\n');
+            const rows = Array.from(document.querySelectorAll('#itemList tr')).map(row => {
+                const cells = row.querySelectorAll('td');
+                const quantitySystem = cells[2].querySelector('input').value;
+                const quantityPhysical = cells[3].querySelector('input').value;
+                const difference = quantityPhysical - quantitySystem; // Calculamos la diferencia
+                return {
+                    code: cells[0].textContent,
+                    name: cells[1].textContent,
+                    quantitySystem: quantitySystem,
+                    quantityPhysical: quantityPhysical,
+                    difference: difference
+                };
+            });
 
-            const telegramUrl = `https://api.telegram.org/bot${token}/sendMessage?chat_id=${chatId}&text=${encodeURIComponent(message)}`;
-            
-            fetch(telegramUrl)
-                .then(response => response.json())
-                .then(data => alert("Datos enviados a Telegram"))
-                .catch(error => alert("Error al enviar a Telegram"));
+            const rowsExcel = rows.map(item => [
+                item.code,
+                item.name,
+                item.quantitySystem,
+                item.quantityPhysical,
+                item.difference // Incluimos la diferencia
+            ]);
+
+            const worksheet = XLSX.utils.aoa_to_sheet([["Código", "Artículo", "Cantidad en Sistema", "Cantidad en Físico", "Diferencia"], ...rowsExcel]);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Inventario");
+
+            const excelFile = XLSX.write(workbook, { bookType: "xlsx", type: "binary" });
+            const blob = new Blob([s2ab(excelFile)], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+
+            const formData = new FormData();
+            formData.append("file", blob, "inventario_articulos.xlsx");
+
+            const telegramUrl = `https://api.telegram.org/bot${token}/sendDocument`;
+            formData.append("chat_id", chatId);
+            formData.append("document", blob, "inventario_articulos.xlsx");
+
+            fetch(telegramUrl, {
+                method: "POST",
+                body: formData
+            })
+            .then(response => response.json())
+            .then(result => {
+                alert("Archivo enviado a Telegram");
+            })
+            .catch(error => {
+                alert("Error al enviar el archivo a Telegram: " + error);
+            });
         }
+
+        function clearTable() {
+            document.getElementById('itemList').innerHTML = '';  // Limpia la tabla
+        }
+
+        async function loadGoogleSheetsData() {
+            const apiKey = 'AIzaSyB8jZxcuFvLvf2CjVjVhT6hLRUw3Gk-8jk'; // Tu API Key
+            const spreadsheetId = '1QVYqsPy559Mo2f-iqImH4wtcW-vDY-pBFeXrOMDh2i0'; // ID de la hoja de cálculo
+            const range = 'B1PA!A:D'; // Nombre de la hoja actualizado
+
+            const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${range}?key=${apiKey}`;
+            try {
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                console.log(data); // Imprime la respuesta para verificar
+
+                if (data.values) {
+                    // Limpiar la tabla antes de cargar nuevos datos
+                    document.getElementById('itemList').innerHTML = '';
+
+                    // Agregar los datos de Google Sheets a la tabla
+                    data.values.forEach(row => {
+                        const [code, name, quantitySystem, quantityPhysical] = row.map(cell => cell.trim());
+                        if (code && name && quantitySystem && quantityPhysical) {
+                            addItemToTable(code, name, quantitySystem, quantityPhysical);
+                        }
+                    });
+                } else {
+                    alert('No se pudieron cargar los datos de Google Sheets.');
+                }
+            } catch (error) {
+                console.error('Error al cargar datos de Google Sheets:', error);
+                alert('Hubo un error al intentar cargar los datos desde Google Sheets.');
+            }
+        }
+
+        window.onload = loadDataFromLocalStorage;
     </script>
 </body>
 
